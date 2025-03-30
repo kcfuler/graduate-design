@@ -29,12 +29,14 @@ loader = WebBaseLoader(
 )
 docs = loader.load()
 
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1000, chunk_overlap=200)
 all_splits = text_splitter.split_documents(docs)
 
 # 初始化 Embedding 模型和 Vector Store
 embeddings = OpenAIEmbeddings()
-vector_store = Chroma.from_documents(documents=all_splits, embedding=embeddings)
+vector_store = Chroma.from_documents(
+    documents=all_splits, embedding=embeddings)
 
 # Define prompt for question-answering
 prompt = hub.pull("rlm/rag-prompt")
@@ -55,7 +57,8 @@ def retrieve(state: State):
 
 def generate(state: State):
     docs_content = "\n\n".join(doc.page_content for doc in state["context"])
-    messages = prompt.invoke({"question": state["question"], "context": docs_content})
+    messages = prompt.invoke(
+        {"question": state["question"], "context": docs_content})
     response = llm.invoke(messages)
     return {"answer": response.content}
 
