@@ -1,6 +1,5 @@
 import bs4
 import os
-from dotenv import load_dotenv
 from langchain import hub
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_core.documents import Document
@@ -11,12 +10,11 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
 from langchain_deepseek import ChatDeepSeek
 
-# 加载环境变量
-load_dotenv()
 
 # 初始化 LLM
 # llm = ChatOpenAI(model="gpt-3.5-turbo")
-llm = ChatDeepSeek(model="deepseek-chat")
+llm = ChatDeepSeek(model="deepseek-chat",
+                   api_key=os.getenv("DEEPSEEK_API_KEY"))
 
 # Load and chunk contents of the blog
 loader = WebBaseLoader(
