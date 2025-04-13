@@ -22,11 +22,13 @@ class TrafficSignRecognitionApp:
         self.csv_exporter = CSVExporter()
         
         # 获取可用模型列表
-        self.available_models = self.model_factory.get_available_models()
+        self.available_models = ModelFactory.get_available_models()
         
         # 初始化当前模型
         self.current_model = None
         self.current_model_name = None
+        if self.available_models:
+            self.load_model(self.available_models[0])
     
     def load_model(self, model_name: str) -> None:
         """
@@ -54,6 +56,15 @@ class TrafficSignRecognitionApp:
         Returns:
             处理结果字典
         """
+        # 检查图像是否为None
+        if image is None:
+            return {
+                "error": "输入图像为空",
+                "image": None,
+                "predictions": [],
+                "metrics": {}
+            }
+            
         # 加载模型
         self.load_model(model_name)
         
@@ -83,9 +94,15 @@ class TrafficSignRecognitionApp:
             return result
             
         except Exception as e:
+            # 停止计时，确保不会影响下一次请求
+            self.metrics_collector.stop_timer()
+            
+            # 返回标准化的错误信息
             return {
                 "error": str(e),
-                "image": image
+                "image": image,
+                "predictions": [],
+                "metrics": {}
             }
     
     def process_batch(
@@ -103,6 +120,15 @@ class TrafficSignRecognitionApp:
         Returns:
             处理结果字典
         """
+        # 检查输入图像列表是否为空
+        if not images:
+            return {
+                "error": "输入图像列表为空",
+                "results": [],
+                "total_time": 0.0,
+                "average_time": 0.0
+            }
+            
         # 加载模型
         self.load_model(model_name)
         
@@ -111,9 +137,19 @@ class TrafficSignRecognitionApp:
         
         try:
             results = []
-            total_time = 0
+            total_time = 0.0
             
             for image in images:
+                # 检查单个图像是否为None
+                if image is None:
+                    results.append({
+                        "error": "输入图像为空",
+                        "predictions": [],
+                        "metrics": {},
+                        "image": None
+                    })
+                    continue
+                
                 # 预处理图像
                 processed_image = self.image_processor.preprocess(image)
                 
@@ -132,20 +168,27 @@ class TrafficSignRecognitionApp:
                     "image": image
                 })
                 
-                total_time += metrics.inference_time
+                total_time += metrics.get("inference_time", 0.0)
             
-            # 计算平均时间
-            average_time = total_time / len(images)
+            # 计算平均时间，避免除以零的情况
+            average_time = total_time / len(images) if len(images) > 0 else 0.0
             
             return {
                 "results": results,
-                "total_time": total_time,
-                "average_time": average_time
+                "total_time": float(total_time),
+                "average_time": float(average_time)
             }
             
         except Exception as e:
+            # 停止计时，确保不会影响下一次请求
+            self.metrics_collector.stop_timer()
+            
+            # 返回标准化的错误信息
             return {
-                "error": str(e)
+                "error": str(e),
+                "results": [],
+                "total_time": 0.0,
+                "average_time": 0.0
             }
     
     def export_results(

@@ -43,8 +43,23 @@ class ImageProcessor:
         Returns:
             预处理后的图像
         """
+        # 检查图像是否为None
+        if image is None:
+            raise ValueError("输入图像不能为None")
+        
+        # 确保图像是numpy数组并且有正确的维度
+        if not isinstance(image, np.ndarray):
+            raise TypeError("输入图像必须是numpy数组")
+        
+        # 检查图像是否为空或尺寸异常
+        if image.size == 0 or len(image.shape) < 2:
+            raise ValueError("输入图像数据异常，无法处理")
+        
         # 调整大小
-        image = cv2.resize(image, target_size)
+        try:
+            image = cv2.resize(image, target_size)
+        except Exception as e:
+            raise ValueError(f"图像大小调整失败: {str(e)}")
         
         # 归一化
         image = image.astype(np.float32) / 255.0

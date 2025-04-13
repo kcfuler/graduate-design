@@ -37,7 +37,7 @@ class MobileNetModel(BaseModel):
             model_path: 模型文件路径
         """
         # 加载预训练的 MobileNet 模型
-        self.model = torchvision.models.mobilenet_v2(pretrained=True)
+        self.model = torchvision.models.mobilenet_v2(weights=torchvision.models.MobileNet_V2_Weights.IMAGENET1K_V1)
         
         # 修改最后一层以适应我们的分类任务
         num_classes = len(self.class_names)
@@ -64,29 +64,46 @@ class MobileNetModel(BaseModel):
         Returns:
             预处理后的张量
         """
+        # 检查图像是否为None
+        if image is None:
+            raise ValueError("输入图像不能为None")
+            
+        # 确保图像是numpy数组
+        if not isinstance(image, np.ndarray):
+            raise TypeError("输入图像必须是numpy数组")
+        
+        # 检查图像数据
+        if image.size == 0 or len(image.shape) < 2:
+            raise ValueError("输入图像数据异常，无法处理")
+        
         # 转换为 RGB 格式
         if len(image.shape) == 2:
             image = np.stack([image] * 3, axis=-1)
-        elif image.shape[2] == 4:
+        elif len(image.shape) > 2 and image.shape[2] == 4:
             image = image[:, :, :3]
+        elif len(image.shape) < 3:
+            raise ValueError("输入图像格式错误，无法转换为RGB格式")
         
-        # 调整大小
-        image = torchvision.transforms.functional.resize(
-            torch.from_numpy(image).permute(2, 0, 1),
-            (224, 224)
-        )
-        
-        # 标准化
-        image = image.float() / 255.0
-        image = torchvision.transforms.functional.normalize(
-            image,
-            mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225]
-        )
-        
-        # 添加批次维度
-        image = image.unsqueeze(0)
-        return image
+        try:
+            # 调整大小
+            image = torchvision.transforms.functional.resize(
+                torch.from_numpy(image).permute(2, 0, 1),
+                (224, 224)
+            )
+            
+            # 标准化
+            image = image.float() / 255.0
+            image = torchvision.transforms.functional.normalize(
+                image,
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225]
+            )
+            
+            # 添加批次维度
+            image = image.unsqueeze(0)
+            return image
+        except Exception as e:
+            raise ValueError(f"图像预处理失败: {str(e)}")
     
     def postprocess(self, output: torch.Tensor) -> List[Dict[str, Any]]:
         """
@@ -98,18 +115,41 @@ class MobileNetModel(BaseModel):
         Returns:
             处理后的结果列表
         """
-        # 获取预测结果
-        probabilities = torch.nn.functional.softmax(output, dim=1)
-        top_prob, top_class = torch.topk(probabilities, 1)
-        
-        # 转换为列表格式
-        results = []
-        for i in range(len(top_class)):
-            result = {
-                "class_id": int(top_class[i].item()),
-                "class_name": self.class_names[int(top_class[i].item())],
-                "confidence": float(top_prob[i].item())
-            }
-            results.append(result)
-        
-        return results 
+        # 检查输出是否为None
+        if output is None:
+            return []
+            
+        # 检查输出是否为张量
+        if not isinstance(output, torch.Tensor):
+            raise TypeError("输出必须是PyTorch张量")
+            
+        try:
+            # 获取预测结果
+            probabilities = torch.nn.functional.softmax(output, dim=1)
+            top_prob, top_class = torch.topk(probabilities, 1)
+            
+            # 转换为列表格式
+            results = []
+            for i in range(len(top_class)):
+                class_id = int(top_class[i].item())
+                # 确保类别ID在有效范围内
+                if 0 <= class_id < len(self.class_names):
+                    result = {
+                        "class_id": class_id,
+                        "class_name": self.class_names[class_id],
+                        "confidence": float(top_prob[i].item())
+                    }
+                else:
+                    # 如果类别ID超出范围，使用默认值
+                    result = {
+                        "class_id": class_id,
+                        "class_name": "未知类别",
+                        "confidence": float(top_prob[i].item())
+                    }
+                results.append(result)
+            
+            return results
+        except Exception as e:
+            # 异常情况下返回空列表
+            print(f"后处理错误: {str(e)}")
+            return [] 

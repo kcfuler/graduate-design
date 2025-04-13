@@ -62,7 +62,7 @@ class MetricsCollector:
             return None
         return torch.cuda.memory_allocated() / 1024 / 1024
     
-    def collect_metrics(self, batch_size: int = 1, image_size: Optional[tuple] = None) -> InferenceMetrics:
+    def collect_metrics(self, batch_size: int = 1, image_size: Optional[tuple] = None) -> Dict[str, any]:
         """
         收集当前推理的指标
         
@@ -71,21 +71,34 @@ class MetricsCollector:
             image_size: 图像尺寸
             
         Returns:
-            推理指标对象
+            包含推理指标的字典
         """
         inference_time = self.stop_timer()
         memory_usage = self.get_memory_usage()
         gpu_memory = self.get_gpu_memory_usage()
         
-        metrics = InferenceMetrics(
+        # 创建一个普通字典而不是使用InferenceMetrics类
+        metrics = {
+            "inference_time": float(inference_time),
+            "memory_usage": float(memory_usage),
+            "gpu_memory": float(gpu_memory) if gpu_memory is not None else None,
+            "batch_size": int(batch_size)
+        }
+        
+        # 将图像尺寸转换为可序列化格式
+        if image_size is not None:
+            metrics["image_width"] = int(image_size[0])
+            metrics["image_height"] = int(image_size[1])
+        
+        # 保存指标历史记录 (使用InferenceMetrics对象仅用于内部存储)
+        self._metrics_history.append(InferenceMetrics(
             inference_time=inference_time,
             memory_usage=memory_usage,
             gpu_memory=gpu_memory,
             batch_size=batch_size,
             image_size=image_size
-        )
+        ))
         
-        self._metrics_history.append(metrics)
         return metrics
     
     def get_average_metrics(self) -> Dict[str, float]:
