@@ -60,7 +60,7 @@ class TrafficSignRecognitionApp:
         self,
         image: np.ndarray,
         model_name: str
-    ) -> Dict[str, any]:
+    ) -> tuple[Dict[str, any], Dict[str, any]]:
         """
         处理单张图像
         
@@ -69,14 +69,15 @@ class TrafficSignRecognitionApp:
             model_name: 模型名称
             
         Returns:
-            处理结果字典
+            tuple: (结果字典, 指标字典)
         """
         # 检查图像是否为None
         if image is None:
             return {
                 "error": "输入图像为空",
                 "image": None,
-                "predictions": [],
+                "predictions": []
+            }, {
                 "metrics": {}
             }
             
@@ -88,7 +89,8 @@ class TrafficSignRecognitionApp:
             return {
                 "error": f"模型 '{model_name}' 加载失败",
                 "image": image,
-                "predictions": [],
+                "predictions": []
+            }, {
                 "metrics": {}
             }
         
@@ -111,11 +113,14 @@ class TrafficSignRecognitionApp:
             # 准备结果
             result = {
                 "predictions": predictions,
-                "metrics": metrics,
                 "image": image
             }
             
-            return result
+            metrics_dict = {
+                "metrics": metrics
+            }
+            
+            return result, metrics_dict
             
         except Exception as e:
             # 停止计时，确保不会影响下一次请求
@@ -125,7 +130,8 @@ class TrafficSignRecognitionApp:
             return {
                 "error": str(e),
                 "image": image,
-                "predictions": [],
+                "predictions": []
+            }, {
                 "metrics": {}
             }
     
