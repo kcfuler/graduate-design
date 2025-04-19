@@ -92,7 +92,9 @@ class ImageProcessor:
         return Path(file_path).suffix.lower() in self._supported_formats
     
     def draw_detection(self, image: np.ndarray, results: List[dict], 
-                      font_scale: float = 0.6, thickness: int = 2) -> np.ndarray:
+                      font_scale: float = 0.6, thickness: int = 2,
+                      text_color: Tuple[int, int, int] = (0, 255, 0),
+                      box_color: Tuple[int, int, int] = (0, 255, 0)) -> np.ndarray:
         """
         在图像上绘制检测结果
         
@@ -101,20 +103,64 @@ class ImageProcessor:
             results: 检测结果列表
             font_scale: 字体大小
             thickness: 线条粗细
+            text_color: 文本颜色 (BGR)
+            box_color: 边界框颜色 (BGR)
             
         Returns:
             绘制了检测结果的图像
         """
-        # 转换为 BGR 格式用于显示
-        display_image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        # 检查输入
+        if image is None or not isinstance(image, np.ndarray):
+            raise ValueError("输入图像必须是有效的numpy数组")
+            
+        if results is None or not isinstance(results, list):
+            # 如果没有结果，返回原始图像
+            return cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         
-        for result in results:
+        # 转换为 BGR 格式用于显示
+        display_image = cv2.cvtColor(image.copy(), cv2.COLOR_RGB2BGR)
+        
+        # 图像尺寸
+        h, w = image.shape[:2]
+        
+        for i, result in enumerate(results):
+            # 获取类别名称和置信度，使用get方法避免KeyError
             class_name = result.get('class_name', 'Unknown')
             confidence = result.get('confidence', 0.0)
             
-            # 在图像上添加文本
+            # 提取边界框信息（如果存在）
+            box = result.get('box', None)
+            
+            # 文本显示位置
+            if box is not None and len(box) == 4:
+                # 如果有边界框，在框顶部显示文本
+                x1, y1, x2, y2 = [int(coord) for coord in box]
+                text_pos = (x1, y1 - 10)
+                
+                # 确保边界框坐标在图像范围内
+                x1 = max(0, min(x1, w - 1))
+                y1 = max(0, min(y1, h - 1))
+                x2 = max(0, min(x2, w - 1))
+                y2 = max(0, min(y2, h - 1))
+                
+                # 绘制边界框
+                cv2.rectangle(display_image, (x1, y1), (x2, y2), box_color, thickness)
+            else:
+                # 如果没有边界框，在图像顶部显示文本
+                text_pos = (10, 30 + i * 30)  # 每个结果显示在不同位置
+            
+            # 准备显示文本
             text = f"{class_name}: {confidence:.2f}"
-            cv2.putText(display_image, text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX,
-                       font_scale, (0, 255, 0), thickness)
+            
+            # 绘制文本背景（提高可读性）
+            (text_w, text_h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)
+            cv2.rectangle(display_image, 
+                         (text_pos[0], text_pos[1] - text_h - 5),
+                         (text_pos[0] + text_w, text_pos[1] + 5),
+                         (0, 0, 0), -1)  # 黑色背景
+            
+            # 绘制文本
+            cv2.putText(display_image, text, text_pos, cv2.FONT_HERSHEY_SIMPLEX,
+                       font_scale, text_color, thickness)
         
         return display_image 

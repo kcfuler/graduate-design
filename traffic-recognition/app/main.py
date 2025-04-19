@@ -75,7 +75,7 @@ class TrafficSignRecognitionApp:
         if image is None:
             return {
                 "error": "输入图像为空",
-                "image": None,
+                "image_shape": None,
                 "predictions": []
             }, {
                 "metrics": {}
@@ -88,7 +88,7 @@ class TrafficSignRecognitionApp:
         if self.current_model is None:
             return {
                 "error": f"模型 '{model_name}' 加载失败",
-                "image": image,
+                "image_shape": image.shape if image is not None else None,
                 "predictions": []
             }, {
                 "metrics": {}
@@ -104,20 +104,49 @@ class TrafficSignRecognitionApp:
             # 模型推理
             predictions = self.current_model.predict(processed_image)
             
+            # 确保预测结果可序列化
+            serializable_predictions = []
+            for pred in predictions:
+                # 创建新的可序列化字典
+                pred_dict = {}
+                for key, value in pred.items():
+                    # 处理特殊类型
+                    if isinstance(value, np.ndarray):
+                        pred_dict[key] = value.tolist()  # numpy数组转为列表
+                    elif isinstance(value, np.integer):
+                        pred_dict[key] = int(value)  # numpy整数转为Python整数
+                    elif isinstance(value, np.floating):
+                        pred_dict[key] = float(value)  # numpy浮点数转为Python浮点数
+                    else:
+                        pred_dict[key] = value
+                serializable_predictions.append(pred_dict)
+            
             # 收集指标
             metrics = self.metrics_collector.collect_metrics(
                 batch_size=1,
                 image_size=image.shape[:2]
             )
             
-            # 准备结果
+            # 将指标转换为可序列化格式
+            serializable_metrics = {}
+            for key, value in metrics.items():
+                if isinstance(value, np.ndarray):
+                    serializable_metrics[key] = value.tolist()
+                elif isinstance(value, np.integer):
+                    serializable_metrics[key] = int(value)
+                elif isinstance(value, np.floating):
+                    serializable_metrics[key] = float(value)
+                else:
+                    serializable_metrics[key] = value
+            
+            # 准备结果 - 不直接返回图像数组，而是返回图像的形状或其他元数据
             result = {
-                "predictions": predictions,
-                "image": image
+                "predictions": serializable_predictions,
+                "image_shape": image.shape[:2] if image is not None else None
             }
             
             metrics_dict = {
-                "metrics": metrics
+                "metrics": serializable_metrics
             }
             
             return result, metrics_dict
@@ -129,7 +158,7 @@ class TrafficSignRecognitionApp:
             # 返回标准化的错误信息
             return {
                 "error": str(e),
-                "image": image,
+                "image_shape": image.shape[:2] if image is not None else None,
                 "predictions": []
             }, {
                 "metrics": {}
@@ -176,7 +205,7 @@ class TrafficSignRecognitionApp:
                         "error": "输入图像为空",
                         "predictions": [],
                         "metrics": {},
-                        "image": None
+                        "image_shape": None
                     })
                     continue
                 
@@ -186,19 +215,48 @@ class TrafficSignRecognitionApp:
                 # 模型推理
                 predictions = self.current_model.predict(processed_image)
                 
+                # 确保预测结果可序列化
+                serializable_predictions = []
+                for pred in predictions:
+                    # 创建新的可序列化字典
+                    pred_dict = {}
+                    for key, value in pred.items():
+                        # 处理特殊类型
+                        if isinstance(value, np.ndarray):
+                            pred_dict[key] = value.tolist()  # numpy数组转为列表
+                        elif isinstance(value, np.integer):
+                            pred_dict[key] = int(value)  # numpy整数转为Python整数
+                        elif isinstance(value, np.floating):
+                            pred_dict[key] = float(value)  # numpy浮点数转为Python浮点数
+                        else:
+                            pred_dict[key] = value
+                    serializable_predictions.append(pred_dict)
+                
                 # 收集指标
                 metrics = self.metrics_collector.collect_metrics(
                     batch_size=1,
                     image_size=image.shape[:2]
                 )
                 
+                # 将指标转换为可序列化格式
+                serializable_metrics = {}
+                for key, value in metrics.items():
+                    if isinstance(value, np.ndarray):
+                        serializable_metrics[key] = value.tolist()
+                    elif isinstance(value, np.integer):
+                        serializable_metrics[key] = int(value)
+                    elif isinstance(value, np.floating):
+                        serializable_metrics[key] = float(value)
+                    else:
+                        serializable_metrics[key] = value
+                
                 results.append({
-                    "predictions": predictions,
-                    "metrics": metrics,
-                    "image": image
+                    "predictions": serializable_predictions,
+                    "metrics": serializable_metrics,
+                    "image_shape": image.shape[:2] if image is not None else None
                 })
                 
-                total_time += metrics.get("inference_time", 0.0)
+                total_time += serializable_metrics.get("inference_time", 0.0)
             
             # 计算平均时间，避免除以零的情况
             average_time = total_time / len(images) if len(images) > 0 else 0.0
@@ -237,15 +295,30 @@ class TrafficSignRecognitionApp:
             导出文件路径
         """
         try:
+            if not results:
+                return "没有数据可导出"
+                
             if export_type == "inference":
+                if "predictions" not in results:
+                    return "结果中没有预测数据"
                 return self.csv_exporter.export_inference_results(
                     results["predictions"]
                 )
             elif export_type == "metrics":
+                if "metrics" not in results:
+                    return "结果中没有指标数据"
                 return self.csv_exporter.export_metrics(
                     results["metrics"]
                 )
             elif export_type == "batch":
+                if "results" not in results:
+                    # 可能是单图像结果，将其包装为批量格式
+                    batch_format = {
+                        "results": [results],
+                        "total_time": results.get("metrics", {}).get("inference_time", 0.0) if "metrics" in results else 0.0,
+                        "average_time": results.get("metrics", {}).get("inference_time", 0.0) if "metrics" in results else 0.0
+                    }
+                    return self.csv_exporter.export_batch_results([batch_format])
                 return self.csv_exporter.export_batch_results(
                     [results]
                 )

@@ -59,6 +59,15 @@ class CSVExporter:
                 "confidence": result.get("confidence")
             }
             
+            # 添加边界框数据（如果存在）
+            if "box" in result and result["box"]:
+                box = result["box"]
+                if isinstance(box, list) and len(box) >= 4:
+                    row["box_x1"] = box[0]
+                    row["box_y1"] = box[1]
+                    row["box_x2"] = box[2]
+                    row["box_y2"] = box[3]
+            
             # 添加额外的元数据
             if "metadata" in result:
                 row.update(result["metadata"])

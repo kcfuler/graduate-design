@@ -175,7 +175,7 @@ Implementation Checklist:
     - 添加开发指南
 
 # Current Execution Step
-> Currently executing: "创建项目基础结构"
+> Currently executing: "修复 JSON 序列化问题"
 
 # Task Progress
 *   2024-04-13
@@ -231,7 +231,7 @@ Implementation Checklist:
     *   Change Summary: 完成图像处理器的实现
     *   Reason: 执行计划步骤 5
     *   Blockers: None
-    *   Status: Pending Confirmation
+    *   Status: Success
 
 *   2024-04-13
     *   Step: 6. 实现性能指标收集
@@ -242,7 +242,7 @@ Implementation Checklist:
     *   Change Summary: 完成性能指标收集器的实现
     *   Reason: 执行计划步骤 6
     *   Blockers: None
-    *   Status: Pending Confirmation
+    *   Status: Success
 
 *   2024-04-13
     *   Step: 7. 实现数据导出
@@ -253,7 +253,7 @@ Implementation Checklist:
     *   Change Summary: 完成数据导出器的实现
     *   Reason: 执行计划步骤 7
     *   Blockers: None
-    *   Status: Pending Confirmation
+    *   Status: Success
 
 *   2024-04-13
     *   Step: 8. 实现 Gradio 界面
@@ -264,7 +264,7 @@ Implementation Checklist:
     *   Change Summary: 完成 Gradio 界面的实现
     *   Reason: 执行计划步骤 8
     *   Blockers: None
-    *   Status: Pending Confirmation
+    *   Status: Success
 
 *   2024-04-13
     *   Step: 9. 添加测试用例
@@ -277,7 +277,67 @@ Implementation Checklist:
     *   Change Summary: 完成测试用例的实现
     *   Reason: 执行计划步骤 9
     *   Blockers: None
+    *   Status: Success
+
+*   2024-05-20
+    *   Step: 优化图像处理模块
+    *   Modifications:
+        - 修改 app/processors/image.py 中的 draw_detection 方法
+        - 增加对边界框(box)的绘制支持
+        - 增强错误处理和输入验证
+        - 改进文本显示效果，添加文本背景
+        - 添加更多自定义选项（文本颜色和边界框颜色）
+    *   Change Summary: 增强图像处理器的兼容性和功能，使其能够处理YOLO和MobileNet模型的不同输出格式
+    *   Reason: 解决模型输出格式与图像处理接口不匹配的问题
+    *   Blockers: None
+    *   Status: Success
+
+*   2024-05-20
+    *   Step: 修复 JSON 序列化问题
+    *   Modifications:
+        - 修改 app/main.py 中的 process_image 方法
+        - 修改 app/main.py 中的 process_batch 方法
+        - 修改 app/main.py 中的 export_results 方法
+        - 修改 app/exporters/csv.py 中的 export_inference_results 方法
+        - 不再直接返回 numpy 图像数组，改为返回图像形状等元数据
+        - 添加数据类型转换，确保所有返回值都是可序列化的
+    *   Change Summary: 修复 FastAPI 在序列化复杂对象（如 numpy 数组）时出现的错误
+    *   Reason: 解决在使用模型时出现的 ValueError: dictionary update sequence element #0 has length 223; 2 is required 错误
+    *   Blockers: None
     *   Status: Pending Confirmation
 
 # Final Review
 待填充 
+
+# Bug修复记录
+*   2024-05-10
+    *   问题: process_image方法返回值与Gradio界面期望格式不匹配
+    *   描述: Gradio界面中设置`process_image`方法应该返回两个输出（`result_output`和`metrics_output`），但实际上函数只返回了一个字典，导致终端报错：`ValueError: An event handler (process_image) didn't receive enough output values (needed: 2, received: 1).`
+    *   修改:
+        - 修改`process_image`函数的返回类型注释，从`Dict[str, any]`改为`tuple[Dict[str, any], Dict[str, any]]`
+        - 修改函数内部的返回值逻辑，将原来的单一字典拆分为结果字典（包含predictions和image）和指标字典（包含metrics）
+        - 更新了所有返回语句，确保它们都返回两个独立的字典
+    *   Change Summary: 修复了Gradio界面与后端接口的类型不匹配问题
+    *   Status: Success 
+
+*   2024-05-20
+    *   问题: draw_detection方法不兼容不同模型的输出格式
+    *   描述: 原始的draw_detection方法只能处理简单的包含class_name和confidence的结果字典，无法处理带有边界框信息的YOLO模型输出，导致可视化效果不完整
+    *   修改:
+        - 增强draw_detection方法，添加对边界框(box)的绘制支持
+        - 改进错误处理和输入验证，防止异常输入导致崩溃
+        - 优化文本显示效果，添加文本背景以提高可读性
+        - 增加更多自定义选项（文本颜色和边界框颜色）
+    *   Change Summary: 优化了图像处理接口，使其能够兼容不同模型的输出格式，特别是处理包含边界框的检测结果
+    *   Status: Success
+
+*   2024-05-20
+    *   问题: FastAPI 序列化错误
+    *   描述: 在使用模型进行推理时，FastAPI 尝试序列化包含 numpy 数组的结果时出错，报错信息为：`ValueError: [ValueError('dictionary update sequence element #0 has length 223; 2 is required'), TypeError('vars() argument must have __dict__ attribute')]`
+    *   修改:
+        - 修改 process_image 和 process_batch 方法，不直接返回 numpy 图像数组，而是返回图像的形状等元数据
+        - 添加数据类型转换步骤，确保所有 numpy 类型都转换为标准 Python 类型（如列表、整数、浮点数）
+        - A更新 export_results 方法，增加对输入数据的检查和兼容处理
+        - 修改 export_inference_results 方法，支持导出边界框数据
+    *   Change Summary: 修复了 FastAPI/Gradio 在序列化复杂对象时的错误，确保所有返回的数据都是 JSON 可序列化的
+    *   Status: Pending Confirmation

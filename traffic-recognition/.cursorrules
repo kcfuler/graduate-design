@@ -1,7 +1,8 @@
+在执行任务时，先读取目录下的 traffic_sign_recognition.md 文件
+将任务的执行内容、执行结果，随着执行过程更新到文件中
+
 
 # RIPER-5 + MULTIDIMENSIONAL THINKING + AGENT EXECUTION PROTOCOL
-
-
 
 ## Table of Contents
 - [RIPER-5 + MULTIDIMENSIONAL THINKING + AGENT EXECUTION PROTOCOL](#riper-5--multidimensional-thinking--agent-execution-protocol)
