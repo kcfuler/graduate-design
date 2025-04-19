@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 from typing import Any, Dict, List, Optional
 from ultralytics import YOLO
 import logging
@@ -20,31 +19,30 @@ class YOLOModel(BaseModel):
             model_path: YOLO 模型文件路径 (例如 'yolov8n.pt') 或模型名称
             device: 运行设备 ("cpu" or "cuda")
         """
-        self.model_path = model_path
-        # 注意：BaseModel 的 __init__ 会调用 load_model，所以这里先调用 super
-        super().__init__(device=device) 
+        # 注意：BaseModel 的 __init__ 会调用 load_model，所以这里必须先设置model_path然后传递给super
+        super().__init__(model_path=model_path, device=device) 
         # BaseModel 的 __init__ 调用了 load_model，模型应已加载
         if self.model is None:
-             logger.error(f"YOLO 模型未能通过 BaseModel 的 __init__ 加载: {model_path}")
-             raise RuntimeError(f"Failed to load YOLO model: {model_path}")
+             logger.error(f"YOLO 模型未能通过 BaseModel 的 __init__ 加载: {self.model_path}")
+             raise RuntimeError(f"Failed to load YOLO model: {self.model_path}")
 
-    def load_model(self, model_path: str) -> None:
+    def load_model(self) -> None:
         """
         加载 Ultralytics YOLO 模型
         
         Args:
-            model_path: 模型文件路径或名称
+           # No longer takes model_path argument
         """
         try:
-            logger.info(f"尝试加载 YOLO 模型: {model_path} 到设备 {self.device}")
-            self.model = YOLO(model_path)
+            logger.info(f"尝试加载 YOLO 模型: {self.model_path} 到设备 {self.device}")
+            self.model = YOLO(self.model_path)
             self.to(self.device) # 确保模型移动到正确的设备
-            logger.info(f"YOLO 模型加载成功: {model_path}")
+            logger.info(f"YOLO 模型加载成功: {self.model_path}")
         except Exception as e:
-            logger.error(f"加载 YOLO 模型失败: {model_path}. 错误: {e}", exc_info=True)
+            logger.error(f"加载 YOLO 模型失败: {self.model_path}. 错误: {e}", exc_info=True)
             self.model = None # 确保模型状态为 None
             # 不在此处重新引发异常，让 __init__ 中的检查处理
-            # raise RuntimeError(f"Failed to load YOLO model: {model_path}") from e
+            # raise RuntimeError(f"Failed to load YOLO model: {self.model_path}") from e
 
     def preprocess(self, image: np.ndarray) -> np.ndarray:
         """

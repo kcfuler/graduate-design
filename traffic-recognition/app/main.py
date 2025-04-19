@@ -37,9 +37,24 @@ class TrafficSignRecognitionApp:
         Args:
             model_name: 模型名称
         """
+        # 确保使用已注册的模型名称
         if model_name != self.current_model_name:
-            self.current_model = self.model_factory.create_model(model_name, model_path=model_name)
-            self.current_model_name = model_name
+            try:
+                self.current_model = self.model_factory.create_model(model_name)
+                self.current_model_name = model_name
+            except Exception as e:
+                # 记录错误但不中断程序
+                print(f"加载模型 '{model_name}' 失败: {e}")
+                # 如果当前没有模型，尝试加载默认模型
+                if self.current_model is None and self.available_models:
+                    fallback_model = next((m for m in self.available_models if m != model_name), None)
+                    if fallback_model:
+                        print(f"尝试加载备用模型: {fallback_model}")
+                        try:
+                            self.current_model = self.model_factory.create_model(fallback_model)
+                            self.current_model_name = fallback_model
+                        except Exception:
+                            pass
     
     def process_image(
         self,
@@ -67,6 +82,15 @@ class TrafficSignRecognitionApp:
             
         # 加载模型
         self.load_model(model_name)
+        
+        # 检查模型是否成功加载
+        if self.current_model is None:
+            return {
+                "error": f"模型 '{model_name}' 加载失败",
+                "image": image,
+                "predictions": [],
+                "metrics": {}
+            }
         
         # 开始收集指标
         self.metrics_collector.start_timer()

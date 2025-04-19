@@ -51,12 +51,11 @@ class MobileNetModel(BaseModel):
         #     "限速20", "限速30", ..., "其他"
         # ]
 
-    def load_model(self, model_path: str) -> None:
+    def load_model(self) -> None:
         """
         加载模型
         
-        Args:
-            model_path: 模型文件路径
+        使用self.model_path作为模型文件路径加载模型
         """
         # 加载预训练的 MobileNet 模型
         # 使用 weights 参数替换旧的 pretrained=True
@@ -83,16 +82,16 @@ class MobileNetModel(BaseModel):
         )
         
         # 如果提供了自定义权重路径，则加载
-        if model_path:
+        if self.model_path:
             try:
-                 logger.info(f"尝试从 {model_path} 加载自定义权重...")
-                 state_dict = torch.load(model_path, map_location=self.device)
+                 logger.info(f"尝试从 {self.model_path} 加载自定义权重...")
+                 state_dict = torch.load(self.model_path, map_location=self.device)
                  self.model.load_state_dict(state_dict)
-                 logger.info(f"成功加载自定义权重: {model_path}")
+                 logger.info(f"成功加载自定义权重: {self.model_path}")
             except FileNotFoundError:
-                 logger.error(f"错误：自定义权重文件 {model_path} 未找到。将使用 ImageNet 预训练权重。")
+                 logger.error(f"错误：自定义权重文件 {self.model_path} 未找到。将使用 ImageNet 预训练权重。")
             except Exception as e:
-                 logger.error(f"加载自定义权重 {model_path} 时出错: {e}。将使用 ImageNet 预训练权重。", exc_info=True)
+                 logger.error(f"加载自定义权重 {self.model_path} 时出错: {e}。将使用 ImageNet 预训练权重。", exc_info=True)
         else:
              logger.info("未提供自定义权重路径，使用 ImageNet 预训练权重。")
         
