@@ -38,7 +38,7 @@ class TrafficSignRecognitionApp:
             model_name: 模型名称
         """
         if model_name != self.current_model_name:
-            self.current_model = self.model_factory.create_model(model_name)
+            self.current_model = self.model_factory.create_model(model_name, model_path=model_name)
             self.current_model_name = model_name
     
     def process_image(

@@ -2,8 +2,18 @@ import torch
 import torchvision
 import numpy as np
 from typing import Any, Dict, List
+import os
+import logging
+import warnings
+from urllib3.exceptions import NotOpenSSLWarning
 from .base import BaseModel
 
+# 忽略 urllib3 v2 关于 OpenSSL 版本低于 1.1.1 的警告
+# 这通常是因为系统 Python 使用了 LibreSSL (如 macOS)
+warnings.filterwarnings("ignore", category=NotOpenSSLWarning)
+
+# 设置日志记录器
+logger = logging.getLogger(__name__)
 
 class MobileNetModel(BaseModel):
     """MobileNet 模型实现"""
@@ -13,22 +23,34 @@ class MobileNetModel(BaseModel):
         初始化 MobileNet 模型
         
         Args:
-            model_path: 模型文件路径
+            model_path: (可选) 自定义模型权重文件路径。如果为 None，则加载预训练的 ImageNet 权重。
             device: 运行设备
         """
+        # --- 在 super().__init__ 之前加载类别名称 ---
+        self.class_names = []
+        class_names_path = os.path.join(os.path.dirname(__file__), "imagenet_classes.txt")
+        try:
+            with open(class_names_path, 'r') as f:
+                self.class_names = [line.strip() for line in f if line.strip()]
+            logger.info(f"成功从 {class_names_path} 加载 {len(self.class_names)} 个类别名称。")
+        except FileNotFoundError:
+            logger.error(f"错误：类别名称文件未找到于 {class_names_path}。MobileNetModel 将无法正确分类。")
+            # 根据需要，可以抛出错误或使用默认列表
+            # raise FileNotFoundError(f"Class names file not found at {class_names_path}")
+            self.class_names = [] # 或者提供一个小的默认列表以允许程序继续运行
+        except Exception as e:
+            logger.error(f"加载类别名称文件时出错: {e}", exc_info=True)
+            self.class_names = []
+            
+        # --- 现在调用 super().__init__ --- 
+        # 这将触发 load_model，此时 self.class_names 已经存在
         super().__init__(model_path, device)
-        self.class_names = [
-            "限速20", "限速30", "限速50", "限速60", "限速70", "限速80", "限速100", "限速120",
-            "禁止通行", "禁止左转", "禁止右转", "禁止直行", "禁止掉头",
-            "注意行人", "注意儿童", "注意非机动车", "注意野生动物",
-            "前方施工", "前方拥堵", "前方事故",
-            "停车让行", "减速让行",
-            "直行", "左转", "右转", "掉头",
-            "人行横道", "非机动车道",
-            "公交专用", "应急车道",
-            "其他"
-        ]
-    
+        
+        # 移除这里的 class_names 定义，因为它已经在上面加载了
+        # self.class_names = [
+        #     "限速20", "限速30", ..., "其他"
+        # ]
+
     def load_model(self, model_path: str) -> None:
         """
         加载模型
@@ -37,19 +59,42 @@ class MobileNetModel(BaseModel):
             model_path: 模型文件路径
         """
         # 加载预训练的 MobileNet 模型
+        # 使用 weights 参数替换旧的 pretrained=True
         self.model = torchvision.models.mobilenet_v2(weights=torchvision.models.MobileNet_V2_Weights.IMAGENET1K_V1)
         
+        # 确保 self.class_names 已被加载
+        if not self.class_names:
+            logger.warning("MobileNetModel 的 class_names 为空，分类器层将使用默认大小 (1000) 或可能失败。")
+            # 尝试从预训练模型的元数据获取类别数（如果可用）
+            try:
+                num_classes = len(torchvision.models.MobileNet_V2_Weights.IMAGENET1K_V1.meta["categories"])
+            except Exception:
+                 num_classes = 1000 # ImageNet 默认
+        else:
+             num_classes = len(self.class_names)
+             
+        logger.info(f"设置 MobileNet 分类器输出类别数为: {num_classes}")
+        
         # 修改最后一层以适应我们的分类任务
-        num_classes = len(self.class_names)
+        # num_classes = len(self.class_names) # 旧代码
         self.model.classifier[1] = torch.nn.Linear(
             self.model.classifier[1].in_features,
             num_classes
         )
         
-        # 如果有预训练权重，则加载
+        # 如果提供了自定义权重路径，则加载
         if model_path:
-            state_dict = torch.load(model_path, map_location=self.device)
-            self.model.load_state_dict(state_dict)
+            try:
+                 logger.info(f"尝试从 {model_path} 加载自定义权重...")
+                 state_dict = torch.load(model_path, map_location=self.device)
+                 self.model.load_state_dict(state_dict)
+                 logger.info(f"成功加载自定义权重: {model_path}")
+            except FileNotFoundError:
+                 logger.error(f"错误：自定义权重文件 {model_path} 未找到。将使用 ImageNet 预训练权重。")
+            except Exception as e:
+                 logger.error(f"加载自定义权重 {model_path} 时出错: {e}。将使用 ImageNet 预训练权重。", exc_info=True)
+        else:
+             logger.info("未提供自定义权重路径，使用 ImageNet 预训练权重。")
         
         self.model = self.model.to(self.device)
         self.model.eval()
