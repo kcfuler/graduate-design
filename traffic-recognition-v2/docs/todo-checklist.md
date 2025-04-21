@@ -76,8 +76,8 @@
   - [x] backend/app/api/routes/__init__.py
   - [x] backend/app/api/routes/models.py
   - [x] backend/app/api/routes/inference.py
-  - [ ] backend/app/api/routes/metrics.py
-  - [ ] backend/app/api/routes/training.py
+  - [x] backend/app/api/routes/metrics.py
+  - [x] backend/app/api/routes/training.py
   
 ## 中间件开发
 

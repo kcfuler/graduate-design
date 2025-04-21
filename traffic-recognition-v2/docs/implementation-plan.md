@@ -175,13 +175,170 @@ npm install @radix-ui/react-slot lucide-react class-variance-authority clsx tail
 ### 11. 实现指标API
 创建文件: backend/app/api/routes/metrics.py
 ```python
-# 实现模型性能指标API
+from fastapi import APIRouter, HTTPException
+from typing import Dict, Any, List, Optional
+
+from app.models import model_manager
+
+# 创建路由
+router = APIRouter()
+
+# 模拟数据 - 存储模型性能指标
+model_metrics = {
+    "mobilenet_v2_tsr": {
+        "accuracy": 0.92,
+        "precision": 0.94,
+        "recall": 0.91,
+        "f1_score": 0.925,
+        "inference_time": 45  # ms
+    },
+    "yolov5s_tsr": {
+        "accuracy": 0.89,
+        "precision": 0.92,
+        "recall": 0.88,
+        "f1_score": 0.90,
+        "inference_time": 75  # ms
+    }
+}
+
+@router.get("")
+async def get_all_models_metrics():
+    """获取所有模型的性能指标"""
+    available_models = model_manager.get_available_models()
+    
+    result = []
+    for model in available_models:
+        model_id = model["id"]
+        metrics = model_metrics.get(model_id, {})
+        result.append({
+            "model_id": model_id,
+            "model_name": model["name"],
+            "metrics": metrics
+        })
+    
+    return {"models_metrics": result}
+
+@router.get("/{model_id}")
+async def get_model_metrics(model_id: str):
+    """获取特定模型的性能指标"""
+    # 验证模型存在
+    model_info = next((m for m in model_manager.get_available_models() 
+                      if m["id"] == model_id), None)
+    if not model_info:
+        raise HTTPException(status_code=404, detail=f"未找到ID为'{model_id}'的模型")
+    
+    metrics = model_metrics.get(model_id, {})
+    
+    return {
+        "model_id": model_id,
+        "model_name": model_info["name"],
+        "metrics": metrics
+    }
 ```
 
-### 12. 实现训练API占位符
+### 12. 实现训练API
 创建文件: backend/app/api/routes/training.py
 ```python
-# 实现训练API占位符
+from fastapi import APIRouter, HTTPException, BackgroundTasks
+from typing import Dict, Any, Optional
+import uuid
+import time
+from datetime import datetime
+
+from app.models import model_manager
+from app.schemas.training import TrainingRequest, TrainingResponse, TrainingStatusResponse
+
+router = APIRouter()
+
+# 模拟训练作业数据库
+training_jobs = {}
+
+def mock_training_task(job_id: str, model_id: str, epochs: int):
+    """模拟训练任务的后台处理函数"""
+    for epoch in range(epochs):
+        # 更新训练作业状态
+        progress = (epoch + 1) / epochs * 100
+        
+        # 模拟一些训练指标
+        loss = 0.5 - (0.3 * progress / 100)
+        accuracy = 0.7 + (0.25 * progress / 100)
+        
+        training_jobs[job_id]["status"] = "running"
+        training_jobs[job_id]["progress"] = progress
+        training_jobs[job_id]["metrics"] = {
+            "current_epoch": epoch + 1,
+            "total_epochs": epochs,
+            "loss": loss,
+            "accuracy": accuracy,
+            "last_updated": datetime.now().isoformat()
+        }
+        
+        # 模拟训练时间间隔
+        time.sleep(0.5)
+        
+        # 检查是否要求停止训练
+        if training_jobs[job_id].get("should_stop", False):
+            training_jobs[job_id]["status"] = "stopped"
+            return
+    
+    # 训练完成
+    training_jobs[job_id]["status"] = "completed"
+    training_jobs[job_id]["progress"] = 100.0
+
+@router.post("", response_model=TrainingResponse)
+async def start_training(request: TrainingRequest, background_tasks: BackgroundTasks):
+    """启动模型训练任务"""
+    # 验证模型存在
+    model_info = next((m for m in model_manager.get_available_models() 
+                      if m["id"] == request.model_id), None)
+    if not model_info:
+        raise HTTPException(status_code=404, detail=f"未找到ID为'{request.model_id}'的模型")
+    
+    # 创建唯一的任务ID
+    job_id = str(uuid.uuid4())
+    
+    # 初始化任务状态
+    training_jobs[job_id] = {
+        "model_id": request.model_id,
+        "status": "queued",
+        "progress": 0.0,
+        "created_at": datetime.now().isoformat(),
+        "parameters": {
+            "epochs": request.epochs,
+            "batch_size": request.batch_size
+        },
+        "metrics": {}
+    }
+    
+    # 启动后台训练任务
+    background_tasks.add_task(
+        mock_training_task, 
+        job_id, 
+        request.model_id,
+        request.epochs
+    )
+    
+    return {
+        "status": "queued",
+        "job_id": job_id,
+        "model_id": request.model_id
+    }
+
+@router.get("/{job_id}", response_model=TrainingStatusResponse)
+async def get_training_status(job_id: str):
+    """获取训练任务状态"""
+    if job_id not in training_jobs:
+        raise HTTPException(status_code=404, detail=f"未找到ID为'{job_id}'的训练任务")
+    
+    job = training_jobs[job_id]
+    
+    return {
+        "job_id": job_id,
+        "model_id": job["model_id"],
+        "status": job["status"],
+        "progress": job["progress"],
+        "metrics": job["metrics"]
+    }
 ```
 
 ## 阶段三：中间件开发
