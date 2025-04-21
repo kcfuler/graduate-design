@@ -43,7 +43,7 @@
 ## 中间件实现方案
 
 ### 技术选择
-- **Express.js**: 轻量级Node.js框架
+- **Express.js + TypeScript**: 轻量级Node.js框架，使用TypeScript提供类型安全
 - **http-proxy-middleware**: 提供请求代理功能
 
 ### 设计方案

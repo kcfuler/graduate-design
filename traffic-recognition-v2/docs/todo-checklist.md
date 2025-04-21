@@ -90,66 +90,72 @@
 - [ ] 17. 安装Node.js依赖
   ```bash
   npm install express cors http-proxy-middleware dotenv
-  npm install --save-dev nodemon
+  npm install --save-dev typescript ts-node @types/express @types/node @types/cors nodemon
   ```
 
-- [ ] 18. 创建.env文件 (middleware/.env)
+- [ ] 18. 创建TypeScript配置文件
+  ```bash
+  npx tsc --init
+  ```
+
+- [ ] 19. 创建.env文件 (middleware/.env)
   ```
   PORT=3001
   BACKEND_URL=http://localhost:8000
   ```
 
-- [ ] 19. 创建package.json脚本 (middleware/package.json)
+- [ ] 20. 创建package.json脚本 (middleware/package.json)
   ```json
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "start": "node dist/server.js",
+    "build": "tsc",
+    "dev": "ts-node-dev src/server.ts"
   }
   ```
 
-- [ ] 20. 实现Express服务器 (middleware/src/server.js)
+- [ ] 21. 实现Express服务器 (middleware/src/server.ts)
 
-- [ ] 21. 实现API代理 (middleware/src/proxy.js)
+- [ ] 22. 实现API代理 (middleware/src/proxy.ts)
 
 ## 前端开发
 
-- [ ] 22. 使用Vite创建React项目
+- [ ] 23. 使用Vite创建React项目
   ```bash
   cd frontend
   npm create vite@latest . -- --template react-ts
   ```
 
-- [ ] 23. 安装React依赖
+- [ ] 24. 安装React依赖
   ```bash
   npm install
   npm install axios
   ```
 
-- [ ] 24. 配置Tailwind CSS
+- [ ] 25. 配置Tailwind CSS
   ```bash
   npm install -D tailwindcss postcss autoprefixer
   npx tailwindcss init -p
   ```
 
-- [ ] 25. 安装Shadcn UI依赖
+- [ ] 26. 安装Shadcn UI依赖
   ```bash
   npm install @radix-ui/react-slot lucide-react class-variance-authority clsx tailwind-merge
   ```
 
-- [ ] 26. 配置Tailwind CSS (frontend/tailwind.config.js)
+- [ ] 27. 配置Tailwind CSS (frontend/tailwind.config.js)
 
-- [ ] 27. 更新CSS入口文件 (frontend/src/index.css)
+- [ ] 28. 更新CSS入口文件 (frontend/src/index.css)
 
-- [ ] 28. 定义TypeScript类型 (frontend/src/types/index.ts)
+- [ ] 29. 定义TypeScript类型 (frontend/src/types/index.ts)
 
-- [ ] 29. 实现API服务 (frontend/src/services/api.ts)
+- [ ] 30. 实现API服务 (frontend/src/services/api.ts)
 
-- [ ] 30. 创建基础UI组件:
+- [ ] 31. 创建基础UI组件:
   ```bash
   mkdir -p frontend/src/components/ui
   ```
 
-- [ ] 31. 实现自定义组件:
+- [ ] 32. 实现自定义组件:
   - [ ] frontend/src/components/Header.tsx
   - [ ] frontend/src/components/ModelSelector.tsx
   - [ ] frontend/src/components/MediaUploader.tsx
@@ -157,37 +163,37 @@
   - [ ] frontend/src/components/MetricsDisplay.tsx
   - [ ] frontend/src/components/TrainingPanel.tsx
 
-- [ ] 32. 更新主应用组件 (frontend/src/App.tsx)
+- [ ] 33. 更新主应用组件 (frontend/src/App.tsx)
 
-- [ ] 33. 配置环境变量 (frontend/.env)
+- [ ] 34. 配置环境变量 (frontend/.env)
   ```
   VITE_API_BASE_URL=http://localhost:3001/api
   ```
 
 ## 系统集成与测试
 
-- [ ] 34. 启动后端服务
+- [ ] 35. 启动后端服务
   ```bash
   cd backend
   uvicorn app.main:app --reload --port 8000
   ```
 
-- [ ] 35. 启动中间件服务
+- [ ] 36. 启动中间件服务
   ```bash
   cd middleware
   npm run dev
   ```
 
-- [ ] 36. 启动前端服务
+- [ ] 37. 启动前端服务
   ```bash
   cd frontend
   npm run dev
   ```
 
-- [ ] 37. 验证系统集成:
+- [ ] 38. 验证系统集成:
   - [ ] 测试模型列表获取
   - [ ] 测试图片上传和推理
   - [ ] 测试模型指标查询
   - [ ] 测试训练功能占位符
 
-- [ ] 38. 优化和修复问题 
+- [ ] 39. 优化和修复问题 

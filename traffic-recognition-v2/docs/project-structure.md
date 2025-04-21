@@ -33,14 +33,15 @@ frontend/
 └── vite.config.ts          # Vite配置
 ```
 
-## 中间件结构 (Node.js + Express)
+## 中间件结构 (Node.js + Express + TypeScript)
 ```
 middleware/
 ├── src/
-│   ├── server.js           # 服务器入口
-│   ├── proxy.js            # 代理配置
+│   ├── server.ts           # 服务器入口
+│   ├── proxy.ts            # 代理配置
 │   └── utils/              # 工具函数
 ├── package.json            # 依赖配置
+├── tsconfig.json           # TypeScript配置
 └── .env                    # 环境变量
 ```
 

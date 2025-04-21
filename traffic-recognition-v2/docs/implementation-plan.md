@@ -75,10 +75,15 @@ npm init -y
 2. 安装依赖
 ```bash
 npm install express cors http-proxy-middleware dotenv
-npm install --save-dev nodemon
+npm install --save-dev typescript ts-node @types/express @types/node @types/cors nodemon
 ```
 
-3. 创建环境配置文件
+3. 创建TypeScript配置文件
+```bash
+npx tsc --init
+```
+
+4. 创建环境配置文件
 ```bash
 echo "PORT=3001
 BACKEND_URL=http://localhost:8000" > .env
@@ -182,14 +187,14 @@ npm install @radix-ui/react-slot lucide-react class-variance-authority clsx tail
 ## 阶段三：中间件开发
 
 ### 1. 实现Express服务器
-创建文件: middleware/src/server.js
-```javascript
+创建文件: middleware/src/server.ts
+```typescript
 // 实现Express服务器入口
 ```
 
 ### 2. 实现代理配置
-创建文件: middleware/src/proxy.js
-```javascript
+创建文件: middleware/src/proxy.ts
+```typescript
 // 实现API代理配置
 ```
 

@@ -5,12 +5,12 @@
 
 ## 技术栈
 - **前端**: React + Shadcn UI + Vite + TypeScript
-- **中间件**: Node.js + Express
+- **中间件**: Node.js + Express + TypeScript
 - **后端**: Python + FastAPI
 
 ## 系统架构
 - React前端处理用户交互和结果展示
-- Node.js中间件作为API网关，转发请求到Python后端
+- Node.js中间件(使用TypeScript)作为API网关，转发请求到Python后端
 - Python后端管理AI模型和执行推理逻辑
 
 ## 任务清单
@@ -31,8 +31,9 @@
   - [ ] 训练控制组件
 - [ ] 实现API通信逻辑
 
-### 3. 中间件开发 (Node.js + Express)
+### 3. 中间件开发 (Node.js + Express + TypeScript)
 - [ ] 初始化Node.js项目
+- [ ] 配置TypeScript
 - [ ] 配置Express服务器
 - [ ] 实现反向代理功能
 - [ ] 处理CORS和错误情况
