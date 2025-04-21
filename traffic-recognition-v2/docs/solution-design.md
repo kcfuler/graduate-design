@@ -45,23 +45,97 @@
 ### 技术选择
 - **Express.js + TypeScript**: 轻量级Node.js框架，使用TypeScript提供类型安全
 - **http-proxy-middleware**: 提供请求代理功能
+- **multer**: 处理文件上传
+- **axios**: 处理HTTP请求
+- **cors**: 处理跨域资源共享
 
 ### 设计方案
 1. **统一API入口**: 所有前端请求通过`/api/*`路由
 2. **请求转发**: 将请求无缝转发到Python后端
-3. **错误处理**: 拦截并转换后端错误，提供一致的错误响应
+3. **错误处理**: 拦截并转换后端错误，提供一致的错误响应格式
+4. **文件上传优化**: 使用multer处理文件上传，支持临时文件存储
+
+### 代码结构
+```
+middleware/
+├── src/                # 源代码目录
+│   ├── index.js        # 主入口文件
+│   └── utils/          # 工具函数
+│       ├── errorHandler.js  # 错误处理
+│       └── streamHandler.js # 流处理
+├── uploads/            # 上传文件临时目录（自动创建）
+├── .env                # 环境变量
+└── package.json        # 项目配置
+```
+
+### 主要功能实现
+
+#### 请求代理
+使用`http-proxy-middleware`创建代理，将所有`/api/*`请求转发到后端服务：
+
+```javascript
+const apiProxy = createProxyMiddleware({
+  target: BACKEND_URL,
+  changeOrigin: true,
+  pathRewrite: {
+    '^/api': ''
+  },
+  onError: handleApiError
+});
+
+app.use('/api', apiProxy);
+```
+
+#### 错误处理
+实现统一的错误处理机制，所有错误响应遵循一致的格式：
+
+```json
+{
+  "error": "错误类型",
+  "message": "详细错误消息",
+  "code": "错误代码"
+}
+```
+
+错误处理器能够：
+- 处理代理过程中的网络错误（如连接拒绝、超时）
+- 转换后端返回的错误格式，确保一致性
+- 提供详细的错误信息和错误代码，便于前端处理
+
+#### 大文件处理
+对于视频文件等大型文件，采用特殊处理流程：
+1. 使用multer将上传文件保存到临时目录
+2. 使用流式处理将文件发送到后端
+3. 处理完成后删除临时文件
+4. 返回处理结果给前端
+
+```javascript
+app.post('/api/infer/video', upload.single('video'), setupStreamProxy(BACKEND_URL));
+```
 
 ### 数据流优化
-考虑以下两种方案处理大文件上传：
-1. **直接代理**: 通过中间件直接转发上传请求
-   - 优点: 实现简单
-   - 缺点: 可能导致内存问题
-   
-2. **流式处理**: 使用流式处理大文件
-   - 优点: 内存效率高
-   - 缺点: 实现复杂度增加
+实现了两种处理大文件上传的方案：
+1. **直接代理**: 对于小文件（如普通图片），使用直接代理
+2. **流式处理**: 对于大文件（如视频），使用流式处理，包括：
+   - 文件缓存和流式转发
+   - 超时控制和错误处理
+   - 自动清理临时文件
 
-**选择**: 对于普通图片使用直接代理，对于视频文件考虑实现流式处理。
+### 部署考虑
+实现了灵活的部署选项：
+1. **开发环境**: 独立服务运行在`http://localhost:3001`
+2. **生产环境**: 支持托管前端静态文件，实现单体部署
+   ```javascript
+   if (process.env.NODE_ENV === 'production') {
+     const staticPath = path.join(__dirname, '../../frontend/dist');
+     app.use(express.static(staticPath));
+     
+     // 处理单页应用路由
+     app.get('*', (req, res) => {
+       res.sendFile(path.join(staticPath, 'index.html'));
+     });
+   }
+   ```
 
 ## 后端实现方案
 
