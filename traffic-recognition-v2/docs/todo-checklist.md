@@ -81,30 +81,30 @@
   
 ## 中间件开发
 
-- [ ] 16. 初始化Node.js项目
+- [x] 16. 初始化Node.js项目
   ```bash
   cd middleware
   npm init -y
   ```
 
-- [ ] 17. 安装Node.js依赖
+- [x] 17. 安装Node.js依赖
   ```bash
   npm install express cors http-proxy-middleware dotenv
   npm install --save-dev typescript ts-node @types/express @types/node @types/cors nodemon
   ```
 
-- [ ] 18. 创建TypeScript配置文件
+- [x] 18. 创建TypeScript配置文件
   ```bash
   npx tsc --init
   ```
 
-- [ ] 19. 创建.env文件 (middleware/.env)
+- [x] 19. 创建.env文件 (middleware/.env)
   ```
   PORT=3001
   BACKEND_URL=http://localhost:8000
   ```
 
-- [ ] 20. 创建package.json脚本 (middleware/package.json)
+- [x] 20. 创建package.json脚本 (middleware/package.json)
   ```json
   "scripts": {
     "start": "node dist/server.js",
@@ -113,9 +113,9 @@
   }
   ```
 
-- [ ] 21. 实现Express服务器 (middleware/src/server.ts)
+- [x] 21. 实现Express服务器 (middleware/src/server.ts)
 
-- [ ] 22. 实现API代理 (middleware/src/proxy.ts)
+- [x] 22. 实现API代理 (middleware/src/proxy.ts)
 
 ## 前端开发
 
@@ -196,4 +196,4 @@
   - [ ] 测试模型指标查询
   - [ ] 测试训练功能占位符
 
-- [ ] 39. 优化和修复问题 
+- [ ] 39. 优化和修复问题
