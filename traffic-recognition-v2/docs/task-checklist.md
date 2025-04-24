@@ -132,81 +132,97 @@
 
 ## 前端开发
 
-- [ ] 23. 使用Vite创建React项目
+- [x] 23. 使用Vite创建React项目
   ```bash
   cd frontend
   npm create vite@latest . -- --template react-ts
   ```
 
-- [ ] 24. 安装React依赖
+- [x] 24. 安装React依赖
   ```bash
   npm install
   npm install axios
   ```
 
-- [ ] 25. 配置Tailwind CSS
+- [x] 25. 安装并配置Tailwind CSS (已按 v4 要求安装 CLI)
   ```bash
-  npm install -D tailwindcss postcss autoprefixer
-  npx tailwindcss init -p
+  # 原命令: npm install -D tailwindcss postcss autoprefixer && npx tailwindcss init -p
   ```
 
-- [ ] 26. 安装Shadcn UI依赖
+- [x] 26. 安装Shadcn UI依赖
   ```bash
   npm install @radix-ui/react-slot lucide-react class-variance-authority clsx tailwind-merge
   ```
 
-- [ ] 27. 配置Tailwind CSS (frontend/tailwind.config.js)
+- [x] 27. 配置Tailwind CSS (frontend/tailwind.config.js) (手动创建)
 
-- [ ] 28. 更新CSS入口文件 (frontend/src/index.css)
+- [x] 28. 更新CSS入口文件 (frontend/src/index.css) (使用 v4 @import)
 
-- [ ] 29. 定义TypeScript类型 (frontend/src/types/index.ts)
+- [x] 29. 定义TypeScript类型 (frontend/src/types/index.ts)
 
-- [ ] 30. 实现API服务 (frontend/src/services/api.ts)
+- [x] 30. 实现API服务 (frontend/src/services/api.ts)
 
-- [ ] 31. 创建基础UI组件:
+- [x] 31. 创建基础UI组件:
   ```bash
   mkdir -p frontend/src/components/ui
   ```
 
-- [ ] 32. 实现自定义组件:
-  - [ ] frontend/src/components/Header.tsx
-  - [ ] frontend/src/components/ModelSelector.tsx
-  - [ ] frontend/src/components/MediaUploader.tsx
-  - [ ] frontend/src/components/ResultDisplay.tsx
-  - [ ] frontend/src/components/MetricsDisplay.tsx
-  - [ ] frontend/src/components/TrainingPanel.tsx
+- [ ] **32. 组件实现 (细化)**:
+  - [ ] **32.1**: 实现 `Header` 组件：添加基本布局和标题样式。
+  - [ ] **32.2**: 实现 `ModelSelector` 组件：
+    - [ ] 调用 `getModels` API 获取模型列表。
+    - [ ] 使用 Shadcn `Select` 组件展示模型选项。
+    - [ ] 管理选中的模型状态。
+  - [ ] **32.3**: 实现 `MediaUploader` 组件：
+    - [ ] 使用 Shadcn `Input type="file"` 或自定义区域处理图片/视频文件选择。
+    - [ ] 实现文件预览功能。
+    - [ ] 添加 Shadcn `Button` 触发上传/推理。
+    - [ ] 管理文件状态和上传进度（可选）。
+  - [ ] **32.4**: 实现 `ResultDisplay` 组件：
+    - [ ] 接收推理结果数据。
+    - [ ] 在图片上绘制边界框（如果适用）。
+    - [ ] 以列表或卡片形式展示识别标签和置信度 (使用 Shadcn `Card`?)。
+  - [ ] **32.5**: 实现 `MetricsDisplay` 组件：
+    - [ ] 调用 `getMetrics` API 获取选定模型的指标。
+    - [ ] 使用 Shadcn `Table` 或 `Card` 展示指标数据。
+  - [ ] **32.6**: 实现 `TrainingPanel` 组件：
+    - [ ] 添加触发训练的 Shadcn `Button`。
+    - [ ] 调用 `startTraining` API (占位符功能)。
+    - [ ] 显示训练状态或消息。
 
-- [ ] 33. 更新主应用组件 (frontend/src/App.tsx)
+- [x] 33. 更新主应用组件 (frontend/src/App.tsx)
 
-- [ ] 34. 配置环境变量 (frontend/.env)
+- [x] 34. 配置环境变量 (frontend/.env) (手动创建)
   ```
   VITE_API_BASE_URL=http://localhost:3001/api
   ```
 
 ## 系统集成与测试
 
-- [ ] 35. 启动后端服务
+- [ ] **35**: 启动后端服务
   ```bash
   cd backend
   uvicorn app.main:app --reload --port 8000
   ```
 
-- [ ] 36. 启动中间件服务
+- [ ] **36**: 启动中间件服务
   ```bash
   cd middleware
   npm run dev
   ```
 
-- [ ] 37. 启动前端服务
+- [ ] **37**: 启动前端服务
   ```bash
   cd frontend
   npm run dev
   ```
 
-- [ ] 38. 验证系统集成:
-  - [ ] 测试模型列表获取
-  - [ ] 测试图片上传和推理
-  - [ ] 测试模型指标查询
-  - [ ] 测试训练功能占位符
+- [ ] **38**: 验证系统集成:
+  - [ ] **38.1**: 测试模型列表获取和选择 (`ModelSelector`)。
+  - [ ] **38.2**: 测试图片上传和推理结果展示 (`MediaUploader`, `ResultDisplay`)。
+  - [ ] **38.3**: 测试模型指标查询和展示 (`MetricsDisplay`)。
+  - [ ] **38.4**: 测试训练功能占位符按钮 (`TrainingPanel`)。
 
-- [ ] 39. 优化和修复问题 
+## 优化与修复
+
+- [ ] **39**: 根据测试结果，优化前端交互、修复 Bug、完善样式。 
