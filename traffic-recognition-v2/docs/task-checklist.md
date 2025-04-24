@@ -196,30 +196,39 @@
 
 ## 系统集成与测试
 
-- [] **35**: 启动后端服务
+- [x] **35**: 启动后端服务
   ```bash
+  # 注意: 由于系统配置，需要使用 python3 而不是 python
   cd backend
-  source venv/bin/activate && uvicorn app.main:app --reload --port 8000
+  python3 -m venv venv
+  source venv/bin/activate && python3 -m uvicorn app.main:app --reload --port 8000
   ```
 
-- [] **36**: 启动中间件服务
+- [x] **36**: 启动中间件服务
   ```bash
   cd middleware
   npm run dev
   ```
 
-- [] **37**: 启动前端服务
+- [x] **37**: 启动前端服务
   ```bash
   cd frontend
   npm run dev
   ```
 
 - [-] **38**: 验证系统集成: (进行中...)
-  - [ ] **38.1**: 测试模型列表获取和选择 (`ModelSelector`).
-  - [ ] **38.2**: 测试图片上传和推理结果展示 (`MediaUploader`, `ResultDisplay`).
-  - [ ] **38.3**: 测试模型指标查询和展示 (`MetricsDisplay`).
-  - [ ] **38.4**: 测试训练功能占位符按钮 (`TrainingPanel`).
+  - [-] **38.1**: 测试模型列表获取和选择 (`ModelSelector`) - 需要后端服务正常启动
+  - [-] **38.2**: 测试图片上传和推理结果展示 (`MediaUploader`, `ResultDisplay`) - 需要后端服务正常启动
+  - [-] **38.3**: 测试模型指标查询和展示 (`MetricsDisplay`) - 需要后端服务正常启动
+  - [-] **38.4**: 测试训练功能占位符按钮 (`TrainingPanel`) - 需要后端服务正常启动
 
 ## 优化与修复
 
 - [ ] **39**: 根据测试结果，优化前端交互、修复 Bug、完善样式。
+
+- [x] **40**: 修复后端服务启动问题
+  - [x] **40.1**: 检查Python环境配置（确认需要使用python3）
+  - [x] **40.2**: 验证依赖项安装（依赖项安装正常）
+  - [x] **40.3**: 修复语法错误（在training.py第76行）
+  - [x] **40.4**: 验证API路由配置（所有API路由工作正常）
+  - [x] **40.5**: 测试后端服务启动（服务正常运行）

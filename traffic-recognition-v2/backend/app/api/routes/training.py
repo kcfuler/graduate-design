@@ -73,7 +73,7 @@ async def start_training(request: TrainingRequest, background_tasks: BackgroundT
             "epochs": request.epochs,
             "batch_size": request.batch_size,
             "dataset_path": request.dataset_path,
-            **request.parameters if request.parameters else {}
+            **(request.parameters if request.parameters else {})
         },
         "metrics": {}
     }
