@@ -167,62 +167,59 @@
   mkdir -p frontend/src/components/ui
   ```
 
-- [ ] **32. 组件实现 (细化)**:
-  - [ ] **32.1**: 实现 `Header` 组件：添加基本布局和标题样式。
-  - [ ] **32.2**: 实现 `ModelSelector` 组件：
-    - [ ] 调用 `getModels` API 获取模型列表。
-    - [ ] 使用 Shadcn `Select` 组件展示模型选项。
-    - [ ] 管理选中的模型状态。
-  - [ ] **32.3**: 实现 `MediaUploader` 组件：
-    - [ ] 使用 Shadcn `Input type="file"` 或自定义区域处理图片/视频文件选择。
-    - [ ] 实现文件预览功能。
-    - [ ] 添加 Shadcn `Button` 触发上传/推理。
-    - [ ] 管理文件状态和上传进度（可选）。
-  - [ ] **32.4**: 实现 `ResultDisplay` 组件：
-    - [ ] 接收推理结果数据。
-    - [ ] 在图片上绘制边界框（如果适用）。
-    - [ ] 以列表或卡片形式展示识别标签和置信度 (使用 Shadcn `Card`?)。
-  - [ ] **32.5**: 实现 `MetricsDisplay` 组件：
-    - [ ] 调用 `getMetrics` API 获取选定模型的指标。
-    - [ ] 使用 Shadcn `Table` 或 `Card` 展示指标数据。
-  - [ ] **32.6**: 实现 `TrainingPanel` 组件：
-    - [ ] 添加触发训练的 Shadcn `Button`。
-    - [ ] 调用 `startTraining` API (占位符功能)。
-    - [ ] 显示训练状态或消息。
+- [x] **32. 组件实现 (细化)**:
+  - [x] **32.1**: 实现 `Header` 组件：添加基本布局和标题样式。
+  - [x] **32.2**: 实现 `ModelSelector` 组件：
+    - [x] 调用 `getModels` API 获取模型列表。
+    - [x] 使用 Shadcn `Select` 组件展示模型选项。
+    - [x] 管理选中的模型状态。
+  - [x] **32.3**: 实现 `MediaUploader` 组件：
+    - [x] 使用 Shadcn `Input type="file"` 处理图片文件选择。
+    - [x] 实现图片文件预览功能。
+    - [x] 添加 Shadcn `Button` 触发上传/推理。
+    - [x] 管理文件和推理状态。
+  - [x] **32.4**: 实现 `ResultDisplay` 组件：
+    - [x] 接收推理结果数据 (`InferenceResult | ApiError | null`)。
+    - [x] 在图片上使用 CSS 绝对定位绘制边界框（如果适用）。
+    - [x] 使用 Shadcn `Card` 展示识别标签和置信度。
+  - [x] **32.5**: 实现 `MetricsDisplay` 组件：
+    - [x] 调用 `getMetrics` API 获取选定模型的指标。
+    - [x] 使用 Shadcn `Card` 展示指标数据 (键值对)。
+  - [x] **32.6**: 实现 `TrainingPanel` 组件：
+    - [x] 添加触发训练的 Shadcn `Button`。
+    - [x] 调用 `startTraining` API (占位符功能)。
+    - [x] 显示训练状态或消息。
 
-- [x] 33. 更新主应用组件 (frontend/src/App.tsx)
+- [x] 33. 更新主应用组件 (frontend/src/App.tsx): 集成子组件，添加状态管理和 Props 传递。
 
 - [x] 34. 配置环境变量 (frontend/.env) (手动创建)
-  ```
-  VITE_API_BASE_URL=http://localhost:3001/api
-  ```
 
 ## 系统集成与测试
 
-- [ ] **35**: 启动后端服务
+- [] **35**: 启动后端服务
   ```bash
   cd backend
-  uvicorn app.main:app --reload --port 8000
+  source venv/bin/activate && uvicorn app.main:app --reload --port 8000
   ```
 
-- [ ] **36**: 启动中间件服务
+- [] **36**: 启动中间件服务
   ```bash
   cd middleware
   npm run dev
   ```
 
-- [ ] **37**: 启动前端服务
+- [] **37**: 启动前端服务
   ```bash
   cd frontend
   npm run dev
   ```
 
-- [ ] **38**: 验证系统集成:
-  - [ ] **38.1**: 测试模型列表获取和选择 (`ModelSelector`)。
-  - [ ] **38.2**: 测试图片上传和推理结果展示 (`MediaUploader`, `ResultDisplay`)。
-  - [ ] **38.3**: 测试模型指标查询和展示 (`MetricsDisplay`)。
-  - [ ] **38.4**: 测试训练功能占位符按钮 (`TrainingPanel`)。
+- [-] **38**: 验证系统集成: (进行中...)
+  - [ ] **38.1**: 测试模型列表获取和选择 (`ModelSelector`).
+  - [ ] **38.2**: 测试图片上传和推理结果展示 (`MediaUploader`, `ResultDisplay`).
+  - [ ] **38.3**: 测试模型指标查询和展示 (`MetricsDisplay`).
+  - [ ] **38.4**: 测试训练功能占位符按钮 (`TrainingPanel`).
 
 ## 优化与修复
 
-- [ ] **39**: 根据测试结果，优化前端交互、修复 Bug、完善样式。 
+- [ ] **39**: 根据测试结果，优化前端交互、修复 Bug、完善样式。
