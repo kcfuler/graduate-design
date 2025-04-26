@@ -10,7 +10,8 @@ traffic-recognition-v2/
 └── backend/                # Python FastAPI后端
 ```
 
-### 前端结构 (React + Shadcn UI + Vite)
+### 前端结构 (React + antd + rsbuild)
+使用 rsbuild 作为构建工具，使用 bun 作为运行时和包管理工具
 ```
 frontend/
 ├── public/                 # 静态资源
