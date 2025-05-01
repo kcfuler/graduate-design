@@ -33,7 +33,7 @@ frontend/
 │   └── index.css           # 全局样式
 ├── package.json            # 依赖配置
 ├── tsconfig.json           # TypeScript配置
-└── vite.config.ts          # Vite配置
+└── rsbuild.config.ts       # rsbuild配置
 ```
 
 ### 中间件结构 (Node.js + Express + TypeScript)
