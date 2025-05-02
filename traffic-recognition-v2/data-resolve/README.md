@@ -14,6 +14,18 @@
 │   ├── annotations.json   # 标注信息
 │   └── lmdb/              # LMDB格式数据
 │
+├── process/               # 数据处理相关代码
+│   ├── data/              # 数据处理核心模块
+│   │   ├── processor.py   # 数据处理器
+│   │   └── utils.py       # 工具函数
+│   │
+│   ├── scripts/           # 处理脚本
+│   │   ├── process_tt100k.py    # 主处理脚本
+│   │   └── extract_weather_data.py # 天气数据提取脚本
+│   │
+│   ├── weather_analysis/  # 天气分析工具
+│   └── config/            # 配置文件
+│
 ├── processed_data/        # 处理后的数据
 │   ├── yolo/              # YOLO格式数据
 │   │   ├── train/         # 训练集
@@ -32,7 +44,10 @@
 │       ├── snow/          # 雪天图片
 │       └── normal/        # 正常天气图片
 │
-├── process_tt100k.py      # 数据处理脚本
+├── tests/                 # 测试代码
+├── test_processor.py      # 处理器测试脚本
+├── quick_start.sh         # 快速启动脚本 
+├── setup.py               # 项目安装配置
 └── README.md              # 使用说明
 ```
 
@@ -46,15 +61,40 @@
 安装依赖：
 
 ```bash
+# 安装所有依赖
+pip install -e .
+
+# 或者单独安装核心依赖
 pip install opencv-python numpy tqdm
+```
+
+## 快速开始
+
+使用快速启动脚本可以一键完成数据处理和模型训练：
+
+```bash
+# 基本数据处理
+./quick_start.sh --data_dir ./data --output_dir ./processed_data
+
+# 数据处理并提取雨天场景数据
+./quick_start.sh --data_dir ./data --output_dir ./processed_data --extract-weather --weather rainy
+
+# 数据处理并训练YOLO模型
+./quick_start.sh --data_dir ./data --output_dir ./processed_data --train-yolo
+
+# 数据处理并训练MobileNet模型
+./quick_start.sh --data_dir ./data --output_dir ./processed_data --train-mobilenet
+
+# 提取特定类别的数据
+./quick_start.sh --extract-weather --weather rainy --classes p5 p10 p23
 ```
 
 ## 数据处理
 
-运行以下命令处理TT100K数据集：
+如果需要单独运行数据处理脚本：
 
 ```bash
-python process_tt100k.py --data_dir ./data --output_dir ./processed_data
+python process/scripts/process_tt100k.py --data_dir ./data --output_dir ./processed_data
 ```
 
 参数说明：
@@ -65,6 +105,18 @@ python process_tt100k.py --data_dir ./data --output_dir ./processed_data
 1. YOLO格式数据：用于训练YOLO模型
 2. MobileNet格式数据：用于训练MobileNet等分类模型
 3. 按天气条件分类的数据：用于研究不同天气条件下的交通标志识别
+
+## 提取特定天气条件的数据
+
+```bash
+python process/scripts/extract_weather_data.py --data_dir ./processed_data/weather_conditions --weather rainy --create_yaml
+```
+
+参数说明：
+- `--data_dir`: 天气数据根目录
+- `--weather`: 要提取的天气条件（rainy, foggy, night, snow, normal）
+- `--create_yaml`: 是否创建YOLO训练配置文件
+- `--classes`: 可选，指定要提取的标志类别
 
 ## YOLO模型训练
 
@@ -84,7 +136,7 @@ yolo train model=yolov11 data=processed_data/yolo/tt100k.yaml epochs=100 imgsz=6
 
 ```bash
 # 为雨天场景训练专门的模型
-yolo train model=yolov11 data=processed_data/weather_conditions/rainy epochs=100 imgsz=640
+yolo train model=yolov11 data=processed_data/weather_conditions/rainy/tt100k_rainy.yaml epochs=100 imgsz=640
 ```
 
 ## MobileNet模型训练
@@ -200,6 +252,19 @@ results = model.evaluate(test_generator)
 print(f"测试精度: {results[1]*100:.2f}%")
 ```
 
+## 测试数据处理
+
+如果需要在一个小样本上测试数据处理功能：
+
+```bash
+python test_processor.py --data_dir ./data --output_dir ./test_output --sample_count 100
+```
+
+参数说明：
+- `--data_dir`: 原始数据集目录
+- `--output_dir`: 测试输出目录
+- `--sample_count`: 采样处理的图像数量
+
 ## 注意事项
 
 1. 原始数据集不会被修改，所有处理结果都保存在新的目录中
@@ -214,4 +279,10 @@ print(f"测试精度: {results[1]*100:.2f}%")
 # 只处理某些类别的标志
 selected_types = ['p5', 'p10', 'p23']  # 示例：只选择这些类型的标志
 processor = TT100KProcessor(args.data_dir, args.output_dir, selected_types=selected_types)
+```
+
+也可以通过快速启动脚本实现：
+
+```bash
+./quick_start.sh --extract-weather --weather normal --classes p5 p10 p23
 ``` 
