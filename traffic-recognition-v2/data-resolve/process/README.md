@@ -51,14 +51,37 @@ process/
 
 ## 使用方法
 
+### 注意事项
+
+在执行脚本前，请确保解决以下常见问题：
+
+1. **模块导入问题**：脚本中导入了`data`模块，需要确保Python能够找到该模块。可通过以下两种方式解决：
+   - 修改脚本中的导入顺序，确保在导入`data`模块前已添加系统路径
+   - 在运行命令时添加环境变量：`$env:PYTHONPATH="./process"` (Windows PowerShell) 或 `PYTHONPATH=./process` (Linux/Mac)
+
+2. **路径问题**：确保在项目根目录下执行命令，而不是在`process`目录内
+
 ### 快速开始：一键处理流水线
 
 使用`tt100k_enhanced_pipeline.py`脚本执行完整处理流程：
 
 ```bash
-python scripts/tt100k_enhanced_pipeline.py \
-    --data_dir /path/to/tt100k \
-    --output_dir /path/to/output \
+# Windows PowerShell
+$env:PYTHONPATH="./process"; python process/scripts/tt100k_enhanced_pipeline.py \
+    --data_dir ./data \
+    --output_dir ./processed_data \
+    --min_freq_high 50 \
+    --min_freq_mid 10 \
+    --num_clusters 9 \
+    --balance_factor 3 \
+    --mosaic_count 1000 \
+    --mixup_count 500 \
+    --input_size 1280
+
+# Linux/Mac
+PYTHONPATH=./process python process/scripts/tt100k_enhanced_pipeline.py \
+    --data_dir ./data \
+    --output_dir ./processed_data \
     --min_freq_high 50 \
     --min_freq_mid 10 \
     --num_clusters 9 \
@@ -75,9 +98,19 @@ python scripts/tt100k_enhanced_pipeline.py \
 #### 1. 分层处理
 
 ```bash
-python scripts/advanced_tt100k_process.py \
-    --data_dir /path/to/tt100k \
-    --output_dir /path/to/stratified_output \
+# Windows PowerShell
+$env:PYTHONPATH="./process"; python process/scripts/advanced_tt100k_process.py \
+    --data_dir ./data \
+    --output_dir ./processed_data/stratified \
+    --min_freq_high 50 \
+    --min_freq_mid 10 \
+    --num_clusters 9 \
+    --balance_factor 3
+
+# Linux/Mac
+PYTHONPATH=./process python process/scripts/advanced_tt100k_process.py \
+    --data_dir ./data \
+    --output_dir ./processed_data/stratified \
     --min_freq_high 50 \
     --min_freq_mid 10 \
     --num_clusters 9 \
@@ -87,13 +120,47 @@ python scripts/advanced_tt100k_process.py \
 #### 2. 数据增强
 
 ```bash
-python scripts/augment_tt100k.py \
-    --yolo_dir /path/to/stratified_output/yolo_stratified \
-    --output_dir /path/to/final_output \
+# Windows PowerShell
+$env:PYTHONPATH="./process"; python process/scripts/augment_tt100k.py \
+    --yolo_dir ./processed_data/stratified/yolo_stratified \
+    --output_dir ./processed_data/final \
     --mosaic_count 1000 \
     --mixup_count 500 \
     --input_size 1280 \
     --copy_orig
+
+# Linux/Mac
+PYTHONPATH=./process python process/scripts/augment_tt100k.py \
+    --yolo_dir ./processed_data/stratified/yolo_stratified \
+    --output_dir ./processed_data/final \
+    --mosaic_count 1000 \
+    --mixup_count 500 \
+    --input_size 1280 \
+    --copy_orig
+```
+
+## 处理后的数据结构
+
+成功处理后，输出目录将包含以下结构：
+
+```
+processed_data/
+├── stratified/                # 分层处理的中间输出
+│   ├── anchors.txt            # 聚类生成的anchor boxes
+│   ├── class_frequency.json   # 类别频次统计
+│   └── yolo_stratified/       # 分层采样后的YOLO格式数据
+│       ├── classes.txt        # 类别名称文件
+│       ├── tt100k.yaml        # YOLO配置文件
+│       ├── train/             # 训练集
+│       ├── val/               # 验证集
+│       └── test/              # 测试集
+└── final/                     # 增强后的最终数据
+    ├── classes.txt            # 类别名称文件 
+    ├── tt100k.yaml            # YOLO配置文件
+    ├── DATASET_INFO.md        # 数据集信息说明
+    ├── train/                 # 训练集
+    ├── val/                   # 验证集
+    └── test/                  # 测试集
 ```
 
 ## 参数说明
@@ -129,4 +196,18 @@ python scripts/augment_tt100k.py \
 
 ```bash
 pip install numpy opencv-python scikit-learn tqdm
-``` 
+```
+
+## 常见问题解决
+
+1. **ModuleNotFoundError: No module named 'data'**
+   - 问题：脚本无法找到`data`模块
+   - 解决方案：设置`PYTHONPATH`环境变量，或修改脚本中的导入顺序
+
+2. **FileNotFoundError: 标注文件不存在**
+   - 问题：脚本找不到annotations_all.json文件
+   - 解决方案：确保`--data_dir`参数指向包含annotations_all.json的TT-100K数据集根目录
+
+3. **处理时间过长**
+   - 问题：大数据集处理耗时长
+   - 解决方案：可以通过`--selected_types`参数只处理部分类别，或调低`--mosaic_count`和`--mixup_count`参数 
