@@ -73,6 +73,7 @@ backend/models/mobilenet/*.h5
 backend/models/mobilenet/*.tflite
 backend/models/yolo/*.pt
 backend/models/yolo/*.onnx
+**/data
 
 # Temporary files
 *.tmp 
