@@ -78,7 +78,7 @@ backend/models/yolo/*.onnx
 !data-resolve/data/TT100K_README.md
 
 # Data directories - ignored after exceptions
-**/data
+data-resolve/data
 **/processed_data/
 **/output
 **/test_output/
