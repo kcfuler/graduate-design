@@ -86,7 +86,5 @@ data-resolve/data
 # Temporary files
 *.tmp 
 
-# 忽略所有data目录
-**/data/
 # 但保留特定文件
 !data-resolve/data/TT100K_README.md 
