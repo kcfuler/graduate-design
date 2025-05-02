@@ -73,6 +73,11 @@ backend/models/mobilenet/*.h5
 backend/models/mobilenet/*.tflite
 backend/models/yolo/*.pt
 backend/models/yolo/*.onnx
+
+# Important exceptions - these files WILL be tracked
+!data-resolve/data/TT100K_README.md
+
+# Data directories - ignored after exceptions
 **/data
 **/processed_data
 **/output
@@ -80,3 +85,8 @@ backend/models/yolo/*.onnx
 
 # Temporary files
 *.tmp 
+
+# 忽略所有data目录
+**/data/
+# 但保留特定文件
+!data-resolve/data/TT100K_README.md 
