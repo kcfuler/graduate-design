@@ -79,9 +79,9 @@ backend/models/yolo/*.onnx
 
 # Data directories - ignored after exceptions
 **/data
-**/processed_data
+**/processed_data/
 **/output
-**/test_output
+**/test_output/
 
 # Temporary files
 *.tmp 
