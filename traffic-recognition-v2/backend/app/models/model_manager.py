@@ -5,6 +5,8 @@ from pathlib import Path
 from app.core.config import get_model_by_id, get_registered_models, ROOT_DIR
 from app.models.mobilenet.model import MobileNetModel
 from app.models.yolo.model import YoloModel
+from app.models.mobilenet_v3.model import MobileNetV3Model
+from app.models.yolov11.model import YOLOv11Model
 
 class ModelManager:
     """
@@ -47,8 +49,12 @@ class ModelManager:
             # 为了演示，我们允许模型文件不存在
             print(f"警告：模型文件不存在: {model_path}，使用占位模型")
         
-        # 根据模型类型加载模型
-        if model_type == "mobilenet":
+        # 根据模型类型和ID加载不同的模型
+        if model_id == "mobilenet_v3_tsr":
+            model = MobileNetV3Model(model_path)
+        elif model_id == "yolov11_tsr":
+            model = YOLOv11Model(model_path)
+        elif model_type == "mobilenet":
             model = MobileNetModel(model_path)
         elif model_type == "yolo":
             model = YoloModel(model_path)

@@ -1,18 +1,18 @@
 {
   "models": [
     {
-      "id": "mobilenet_v2_tsr",
-      "name": "MobileNetV2 (轻量级)",
+      "id": "mobilenet_v3_tsr",
+      "name": "MobileNetV3 (轻量级)",
       "type": "mobilenet",
       "description": "轻量级模型，适合资源受限场景",
-      "path": "models/mobilenet/model.h5"
+      "path": "models/mobilenet_v3/model.h5"
     },
     {
-      "id": "yolov5s_tsr",
-      "name": "YOLOv5s (通用)",
+      "id": "yolov11_tsr",
+      "name": "YOLOv11 (通用)",
       "type": "yolo",
-      "description": "通用对象检测模型，精度与速度平衡",
-      "path": "models/yolo/model.pt"
+      "description": "最新版通用对象检测模型，精度与速度平衡",
+      "path": "models/yolov11/model.pt"
     }
   ]
 }
