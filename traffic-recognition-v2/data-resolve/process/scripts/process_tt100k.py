@@ -21,7 +21,7 @@ def parse_args():
     parser.add_argument('--selected_types', type=str, default=None,
                         help='需要处理的交通标志类型，用逗号分隔，默认处理所有类型')
     parser.add_argument('--formats', type=str, default='all',
-                        help='需要生成的数据格式，可选: all, yolo, mobilenet, weather')
+                        help='需要生成的数据格式，可选: all, yolo, mobilenet')
     parser.add_argument('--train_ratio', type=float, default=0.8,
                         help='训练集比例')
     parser.add_argument('--val_ratio', type=float, default=0.1,
@@ -58,8 +58,6 @@ def main():
             processor.process_to_yolo_format()
         if 'mobilenet' in formats:
             processor.process_to_mobilenet_format()
-        if 'weather' in formats:
-            processor.process_by_weather_conditions()
     
     print("数据处理完成！")
 

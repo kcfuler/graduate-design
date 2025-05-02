@@ -75,6 +75,8 @@ backend/models/yolo/*.pt
 backend/models/yolo/*.onnx
 **/data
 **/processed_data
+**/output
+**/test_output
 
 # Temporary files
 *.tmp 
