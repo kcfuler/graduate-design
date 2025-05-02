@@ -20,8 +20,7 @@ class TT100KAugmenter:
     """TT100K数据增强器"""
 
     def __init__(self, yolo_dataset_dir, output_dir,
-                 mosaic_prob=0.5, mixup_prob=0.3, copy_orig=True,
-                 input_size=1280):
+                 mosaic_prob=0.5, mixup_prob=0.3, copy_orig=True):
         """
         初始化增强器
 
@@ -31,14 +30,12 @@ class TT100KAugmenter:
             mosaic_prob (float): 马赛克增强的概率
             mixup_prob (float): 混合增强的概率
             copy_orig (bool): 是否复制原始样本
-            input_size (int): 输出图像尺寸
         """
         self.yolo_dataset_dir = yolo_dataset_dir
         self.output_dir = output_dir
         self.mosaic_prob = mosaic_prob
         self.mixup_prob = mixup_prob
         self.copy_orig = copy_orig
-        self.input_size = input_size
 
         # 创建输出目录
         os.makedirs(self.output_dir, exist_ok=True)
@@ -189,23 +186,30 @@ class TT100KAugmenter:
         Returns:
             新的图像和标签
         """
+        # 计算马赛克图像的尺寸（使用最大图像的尺寸而不是固定值）
+        max_h = max([img.shape[0] for img in imgs if img is not None])
+        max_w = max([img.shape[1] for img in imgs if img is not None])
+
+        # 计算输出尺寸
+        out_h = max_h * 2
+        out_w = max_w * 2
+
         # 创建一个空的马赛克画布
-        mosaic_img = np.zeros(
-            (self.input_size, self.input_size, 3), dtype=np.uint8)
+        mosaic_img = np.zeros((out_h, out_w, 3), dtype=np.uint8)
 
         # 计算中心点
-        cx = self.input_size // 2
-        cy = self.input_size // 2
+        cx = out_w // 2
+        cy = out_h // 2
 
         # 合并后的标签
         mosaic_labels = []
 
         # 处理四个位置的图像
         positions = [
-            (0, 0, cx, cy),               # 左上
-            (cx, 0, self.input_size, cy),  # 右上
-            (0, cy, cx, self.input_size),  # 左下
-            (cx, cy, self.input_size, self.input_size)  # 右下
+            (0, 0, cx, cy),           # 左上
+            (cx, 0, out_w, cy),       # 右上
+            (0, cy, cx, out_h),       # 左下
+            (cx, cy, out_w, out_h)    # 右下
         ]
 
         for i, (img, labels) in enumerate(zip(imgs, labels_list)):
@@ -217,8 +221,9 @@ class TT100KAugmenter:
             # 各个区域的位置
             x1a, y1a, x2a, y2a = positions[i]  # 目标区域
 
-            # 调整图像大小
-            img_resized = cv2.resize(img, (x2a - x1a, y2a - y1a))
+            # 调整图像大小，但保持原始宽高比
+            target_w, target_h = x2a - x1a, y2a - y1a
+            img_resized = cv2.resize(img, (target_w, target_h))
             mosaic_img[y1a:y2a, x1a:x2a] = img_resized
 
             # 调整标签
@@ -227,10 +232,10 @@ class TT100KAugmenter:
                 labels_cp = labels.copy()
 
                 # 调整坐标比例
-                labels_cp[:, 1] = labels_cp[:, 1] / w * (x2a - x1a) + x1a
-                labels_cp[:, 3] = labels_cp[:, 3] / w * (x2a - x1a) + x1a
-                labels_cp[:, 2] = labels_cp[:, 2] / h * (y2a - y1a) + y1a
-                labels_cp[:, 4] = labels_cp[:, 4] / h * (y2a - y1a) + y1a
+                labels_cp[:, 1] = labels_cp[:, 1] / w * target_w + x1a
+                labels_cp[:, 3] = labels_cp[:, 3] / w * target_w + x1a
+                labels_cp[:, 2] = labels_cp[:, 2] / h * target_h + y1a
+                labels_cp[:, 4] = labels_cp[:, 4] / h * target_h + y1a
 
                 # 添加到总标签中
                 mosaic_labels.append(labels_cp)
@@ -240,7 +245,7 @@ class TT100KAugmenter:
 
             # 裁剪到图像边界内
             mosaic_labels[:, 1:5] = np.clip(
-                mosaic_labels[:, 1:5], 0, self.input_size)
+                mosaic_labels[:, 1:5], 0, [out_w, out_h, out_w, out_h])
 
             # 过滤掉太小的标注
             box_w = mosaic_labels[:, 3] - mosaic_labels[:, 1]
@@ -262,7 +267,7 @@ class TT100KAugmenter:
         Returns:
             混合后的图像和标签
         """
-        # 确保两张图像的尺寸相同
+        # 确保两张图像的尺寸相同，但保留第一张图像的原始尺寸
         h1, w1 = img1.shape[:2]
         img2 = cv2.resize(img2, (w1, h1))
 
@@ -302,10 +307,7 @@ class TT100KAugmenter:
 
                 img_name = os.path.basename(img_path)
 
-                # 调整图像大小到目标尺寸
-                img = cv2.resize(img, (self.input_size, self.input_size))
-
-                # 加载并调整标签
+                # 加载标签
                 _, labels = self.load_image_and_labels(img_path, label_path)
 
                 # 保存图像和标签
@@ -362,10 +364,6 @@ class TT100KAugmenter:
                 mixup_img, mixup_labels = self.apply_mixup_augmentation(
                     img1, labels1, img2, labels2, alpha)
 
-                # 调整大小
-                mixup_img = cv2.resize(
-                    mixup_img, (self.input_size, self.input_size))
-
                 # 生成文件名
                 mixup_name = f"mixup_{i:05d}.jpg"
 
@@ -407,8 +405,6 @@ def parse_args():
                         help='马赛克增强样本数量')
     parser.add_argument('--mixup_count', type=int, default=500,
                         help='mixup增强样本数量')
-    parser.add_argument('--input_size', type=int, default=1280,
-                        help='输出图像尺寸')
     parser.add_argument('--copy_orig', action='store_true',
                         help='是否复制原始样本')
     parser.add_argument('--seed', type=int, default=42,
@@ -429,8 +425,7 @@ def main():
     augmenter = TT100KAugmenter(
         args.yolo_dir,
         args.output_dir,
-        copy_orig=args.copy_orig,
-        input_size=args.input_size
+        copy_orig=args.copy_orig
     )
 
     # 加载数据集路径

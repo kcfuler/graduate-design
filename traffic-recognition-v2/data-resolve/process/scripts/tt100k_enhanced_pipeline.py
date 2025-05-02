@@ -28,8 +28,6 @@ def parse_args():
                         help='马赛克增强样本数量')
     parser.add_argument('--mixup_count', type=int, default=500,
                         help='mixup增强样本数量')
-    parser.add_argument('--input_size', type=int, default=1280,
-                        help='输入图像尺寸')
     parser.add_argument('--selected_types', type=str, default=None,
                         help='需要处理的交通标志类型，用逗号分隔，默认处理所有类型')
     parser.add_argument('--skip_step', type=int, nargs='+', default=[],
@@ -124,7 +122,7 @@ def main():
                 print("请确保已完成步骤1，或检查输出路径")
                 return
 
-            cmd = f"python {script_path} --yolo_dir {stratified_yolo_dir} --output_dir {final_output_dir} --mosaic_count {args.mosaic_count} --mixup_count {args.mixup_count} --input_size {args.input_size} --copy_orig --seed {args.seed}"
+            cmd = f"python {script_path} --yolo_dir {stratified_yolo_dir} --output_dir {final_output_dir} --mosaic_count {args.mosaic_count} --mixup_count {args.mixup_count} --copy_orig --seed {args.seed}"
 
             if not run_process(cmd, desc=step['desc']):
                 print("数据增强失败，终止流水线")
@@ -154,8 +152,7 @@ def create_dataset_readme(args, output_dir):
         f.write(f"- Anchor boxes聚类数量: {args.num_clusters}\n")
         f.write(f"- 中频类别过采样倍数: {args.balance_factor}\n")
         f.write(f"- 马赛克增强样本数: {args.mosaic_count}\n")
-        f.write(f"- Mixup增强样本数: {args.mixup_count}\n")
-        f.write(f"- 输入图像尺寸: {args.input_size}x{args.input_size}\n\n")
+        f.write(f"- Mixup增强样本数: {args.mixup_count}\n\n")
 
         if args.selected_types:
             f.write(f"- 选择处理的类别: {args.selected_types}\n\n")
@@ -181,10 +178,10 @@ def create_dataset_readme(args, output_dir):
         f.write("```bash\n")
         f.write(f"# YOLOv8\n")
         f.write(
-            f"yolo detect train data={os.path.join(output_dir, 'tt100k.yaml')} model=yolov8n.pt epochs=200 imgsz={args.input_size} batch=16\n\n")
+            f"yolo detect train data={os.path.join(output_dir, 'tt100k.yaml')} model=yolov8n.pt epochs=200 batch=16\n\n")
         f.write(f"# YOLOv5\n")
         f.write(
-            f"python train.py --data {os.path.join(output_dir, 'tt100k.yaml')} --weights yolov5s.pt --img {args.input_size} --epochs 200 --batch-size 16\n")
+            f"python train.py --data {os.path.join(output_dir, 'tt100k.yaml')} --weights yolov5s.pt --epochs 200 --batch-size 16\n")
         f.write("```\n\n")
 
         f.write("2. 推荐训练策略:\n")
@@ -198,8 +195,7 @@ def create_dataset_readme(args, output_dir):
         f.write("1. 根据类别频次分三类处理，避免长尾问题\n")
         f.write("2. 对TT100K数据集特有的小目标重新聚类Anchor\n")
         f.write("3. 使用分层采样策略平衡类别分布\n")
-        f.write("4. 应用马赛克和mixup数据增强\n")
-        f.write("5. 增大输入分辨率至1280×1280\n\n")
+        f.write("4. 应用马赛克和mixup数据增强\n\n")
 
         f.write("生成日期: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n")
 
