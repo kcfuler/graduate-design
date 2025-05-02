@@ -123,11 +123,31 @@ python process/scripts/extract_weather_data.py --data_dir ./processed_data/weath
 ### YOLO v11模型训练
 
 1. 首先确保已安装YOLOv11环境
-2. 使用生成的配置文件进行训练：
+   ```bash
+   pip install ultralytics
+   ```
+
+2. 使用项目中的训练脚本进行训练：
 
 ```bash
-# 使用生成的配置文件训练
-yolo train model=yolov11 data=processed_data/yolo/tt100k.yaml epochs=100 imgsz=640
+# 创建必要的输出目录
+mkdir -p train/yolo/outputs
+
+# 使用训练脚本进行训练 (使用预训练模型)
+python train/yolo/scripts/train_yolo.py --data_dir ./processed_data/yolo --epochs 50 --batch_size 8 --project train/yolo/outputs --name tt100k_traffic_signs --pretrained
+
+# 或者从头开始训练
+python train/yolo/scripts/train_yolo.py --data_dir ./processed_data/yolo --epochs 50 --batch_size 8 --project train/yolo/outputs --name tt100k_traffic_signs
+```
+
+也可以直接使用 ultralytics 命令行进行训练：
+
+```bash
+# 使用预训练模型训练
+yolo train model=yolo11n.pt data=processed_data/yolo/tt100k.yaml epochs=50 imgsz=640 batch=8 project=train/yolo/outputs name=tt100k_yolov11
+
+# 从头开始训练
+yolo train model=yolo11n data=processed_data/yolo/tt100k.yaml epochs=50 imgsz=640 batch=8 project=train/yolo/outputs name=tt100k_yolov11
 ```
 
 ### 根据天气条件训练特定模型
@@ -231,8 +251,48 @@ model.save('tt100k_mobilenet.h5')
 评估YOLO模型：
 
 ```bash
-yolo val model=path/to/trained/model.pt data=processed_data/yolo/tt100k.yaml
+# 使用YOLO命令行工具评估模型
+yolo val model=train/yolo/outputs/tt100k_traffic_signs/weights/best.pt data=processed_data/yolo/tt100k.yaml
+
+# 或使用我们的测试脚本生成详细评估报告
+python train/yolo/scripts/test_model.py --model train/yolo/outputs/tt100k_traffic_signs/weights/best.pt --data processed_data/yolo/tt100k.yaml --output_dir test_results --device cpu
 ```
+
+测试脚本会生成以下内容：
+- 混淆矩阵可视化
+- 精确率-召回率曲线
+- 各类别的性能指标
+- 详细的测试报告
+
+如果需要在实际图像上测试：
+
+```bash
+# 在测试图像上运行模型
+python train/yolo/scripts/test_model.py --model train/yolo/outputs/tt100k_traffic_signs/weights/best.pt --data processed_data/yolo/tt100k.yaml --test_images processed_data/yolo/test/images --output_dir test_results --device cpu
+```
+
+## 生成训练测试报告
+
+完成YOLO模型训练后，可以使用以下命令生成详细的训练测试报告：
+
+```bash
+# 创建报告输出目录
+mkdir -p reports
+
+# 生成训练报告
+python train/yolo/scripts/generate_report.py --results_dir train/yolo/outputs/tt100k_traffic_signs --output_dir reports
+```
+
+生成的报告将包含以下内容：
+- 训练基本信息（模型类型、训练轮数、图像尺寸等）
+- 训练参数配置
+- 训练性能（学习率、训练时间）
+- 训练损失曲线
+- 验证指标（mAP、精确率、召回率）
+- 各类别性能指标
+- 训练结果可视化图表
+
+报告文件会以markdown格式保存，可以轻松转换为PDF或HTML格式进行分享。
 
 评估MobileNet模型：
 

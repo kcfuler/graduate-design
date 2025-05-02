@@ -38,6 +38,9 @@ def create_dataset_yaml(data_dir, output_file='dataset.yaml'):
         'names': classes
     }
     
+    # 确保输出目录存在
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+    
     # 保存配置文件
     with open(output_file, 'w') as f:
         yaml.dump(config, f, default_flow_style=False)
@@ -45,8 +48,8 @@ def create_dataset_yaml(data_dir, output_file='dataset.yaml'):
     print(f"数据集配置文件已创建: {output_file}")
     return output_file
 
-def train_yolo(data_yaml, model='yolov11', epochs=100, img_size=640, batch_size=16, 
-               weights='', device='0', project='runs/train', name='exp'):
+def train_yolo(data_yaml, model='yolo11n.pt', epochs=100, img_size=640, batch_size=16, 
+               pretrained=True, device='0', project='runs/train', name='exp'):
     """训练YOLO模型"""
     if not check_yolo_installed():
         print("错误: YOLO命令行工具未安装，请先安装它")
@@ -66,10 +69,6 @@ def train_yolo(data_yaml, model='yolov11', epochs=100, img_size=640, batch_size=
         f'name={name}'
     ]
     
-    # 如果提供了预训练权重
-    if weights:
-        cmd.append(f'weights={weights}')
-    
     # 执行训练命令
     print("开始训练YOLO模型...")
     print(f"执行命令: {' '.join(cmd)}")
@@ -85,16 +84,16 @@ def main():
     parser = argparse.ArgumentParser(description='训练YOLO模型')
     parser.add_argument('--data_dir', type=str, default='./processed_data/yolo',
                         help='处理后的YOLO格式数据目录')
-    parser.add_argument('--model', type=str, default='yolov11',
-                        help='YOLO模型版本，例如yolov11')
+    parser.add_argument('--model', type=str, default='yolo11n.pt',
+                        help='YOLO模型版本，例如yolo11n.pt')
     parser.add_argument('--epochs', type=int, default=100,
                         help='训练轮数')
     parser.add_argument('--img_size', type=int, default=640,
                         help='输入图像尺寸')
     parser.add_argument('--batch_size', type=int, default=16,
                         help='批次大小')
-    parser.add_argument('--weights', type=str, default='',
-                        help='预训练权重路径，空字符串表示从头开始训练')
+    parser.add_argument('--pretrained', action='store_true',
+                        help='使用预训练模型')
     parser.add_argument('--device', type=str, default='0',
                         help='训练设备（GPU ID），例如0或0,1,2,3')
     parser.add_argument('--project', type=str, default='runs/train',
@@ -115,13 +114,15 @@ def main():
         return
     
     # 训练模型
+    model = args.model if args.pretrained else f'yolo11n'
+    
     train_yolo(
         data_yaml=data_yaml,
-        model=args.model,
+        model=model,
         epochs=args.epochs,
         img_size=args.img_size,
         batch_size=args.batch_size,
-        weights=args.weights,
+        pretrained=args.pretrained,
         device=args.device,
         project=args.project,
         name=args.name
