@@ -30,11 +30,11 @@ python download.py --model yolov11
 
 ```bash
 # 测试所有模型
-python test_models.py
+python test/test_run/run.py
 
 # 仅测试指定模型
-python test_models.py --model mobilenet_v3
-python test_models.py --model yolov11
+python test/test_run/run.py --model mobilenet_v3
+python test/test_run/run.py --model yolov11
 ```
 
 测试结果将保存在 `models/test_results` 目录下。
