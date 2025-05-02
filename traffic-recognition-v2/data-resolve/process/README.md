@@ -71,8 +71,7 @@ $env:PYTHONPATH="./process"; python process/scripts/tt100k_enhanced_pipeline.py 
     --num_clusters 9 \
     --balance_factor 3 \
     --mosaic_count 1000 \
-    --mixup_count 500 \
-    --input_size 1280
+    --mixup_count 500
 
 # Linux/Mac
 PYTHONPATH=./process python process/scripts/tt100k_enhanced_pipeline.py \
@@ -83,8 +82,7 @@ PYTHONPATH=./process python process/scripts/tt100k_enhanced_pipeline.py \
     --num_clusters 9 \
     --balance_factor 3 \
     --mosaic_count 1000 \
-    --mixup_count 500 \
-    --input_size 1280
+    --mixup_count 500
 ```
 
 ### 分步执行
@@ -122,7 +120,6 @@ $env:PYTHONPATH="./process"; python process/scripts/augment_tt100k.py \
     --output_dir ./processed_data/final \
     --mosaic_count 1000 \
     --mixup_count 500 \
-    --input_size 1280 \
     --copy_orig
 
 # Linux/Mac
@@ -131,7 +128,6 @@ PYTHONPATH=./process python process/scripts/augment_tt100k.py \
     --output_dir ./processed_data/final \
     --mosaic_count 1000 \
     --mixup_count 500 \
-    --input_size 1280 \
     --copy_orig
 ```
 
@@ -169,7 +165,6 @@ processed_data/
 - `--balance_factor`：中频类别过采样倍数（默认：3）
 - `--mosaic_count`：马赛克增强样本数量（默认：1000）
 - `--mixup_count`：Mixup增强样本数量（默认：500）
-- `--input_size`：输入图像分辨率（默认：1280）
 - `--selected_types`：只处理指定的类别（可选，默认处理所有类别）
 
 ## 期望效果
@@ -206,4 +201,15 @@ pip install numpy opencv-python scikit-learn tqdm
 
 3. **处理时间过长**
    - 问题：大数据集处理耗时长
-   - 解决方案：可以通过`--selected_types`参数只处理部分类别，或调低`--mosaic_count`和`--mixup_count`参数 
+   - 解决方案：可以通过`--selected_types`参数只处理部分类别，或调低`--mosaic_count`和`--mixup_count`参数
+
+4. **参数错误: unrecognized arguments: --input_size**
+   - 问题：README中曾提到的`--input_size`参数在最新版本脚本中已被移除
+   - 解决方案：请移除此参数，直接使用其他参数运行脚本
+   
+5. **处理失败或中断**
+   - 问题：处理过程中断或失败
+   - 解决方案：
+     - 使用`--skip_step`或`--only_step`参数跳过已完成步骤或只执行特定步骤
+     - 检查生成的中间文件是否完整
+     - 确保磁盘空间充足，TT-100K数据集处理后会占用更多空间 

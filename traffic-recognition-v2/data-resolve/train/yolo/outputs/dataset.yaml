@@ -201,7 +201,7 @@ names:
 - w8
 - wc
 nc: 201
-path: D:\Code\github_client\graduate-design\traffic-recognition-v2\data-resolve\processed_data\yolo
+path: D:\Code\github_client\graduate-design\traffic-recognition-v2\data-resolve\processed_data\final
 test: test/images
 train: train/images
 val: val/images

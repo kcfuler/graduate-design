@@ -1,5 +1,5 @@
 # YOLOv11配置 - TT100K数据集
-path: ../../processed_data/yolo  # 数据集根目录
+path: ../../processed_data/final  # 数据集根目录
 train: train/images  # 训练图像
 val: val/images  # 验证图像
 test: test/images  # 测试图像
