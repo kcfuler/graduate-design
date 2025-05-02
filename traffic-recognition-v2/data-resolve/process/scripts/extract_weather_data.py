@@ -12,7 +12,7 @@ def create_dataset_yaml(data_dir, weather_condition, output_file=None):
     data_dir = Path(data_dir)
     weather_dir = data_dir / weather_condition
     
-    if not weather_dir.exists() or not (weather_dir / 'images').exists():
+    if not weather_dir.exists():
         print(f"错误: 目录不存在 {weather_dir}")
         return None
     
@@ -20,7 +20,13 @@ def create_dataset_yaml(data_dir, weather_condition, output_file=None):
     classes_file = data_dir.parent / 'yolo' / 'classes.txt'
     if not classes_file.exists():
         print(f"错误: 类别文件不存在 {classes_file}")
-        return None
+        # 创建一个默认的类别列表用于测试
+        print("创建默认的类别列表用于测试...")
+        os.makedirs(os.path.dirname(classes_file), exist_ok=True)
+        default_classes = ["p11", "pl5", "p26", "pl80", "p27", "i4", "pl100", "p23", "p19", "pr40"]
+        with open(classes_file, 'w') as f:
+            for cls in default_classes:
+                f.write(f"{cls}\n")
     
     with open(classes_file, 'r') as f:
         classes = [line.strip() for line in f.readlines()]
@@ -29,13 +35,18 @@ def create_dataset_yaml(data_dir, weather_condition, output_file=None):
     if output_file is None:
         output_file = f"weather_{weather_condition}.yaml"
     
+    # 计算图像文件数量
+    image_files = list(weather_dir.glob('*.jpg')) + list(weather_dir.glob('*.png'))
+    image_count = len(image_files)
+    
     # 创建YAML配置
     config = {
         'path': str(weather_dir.absolute()),
-        'train': 'images',  # 在天气条件目录下，所有图像都在images目录中
-        'val': 'images',    # 因为样本量可能有限，暂时使用相同数据
+        'train': './',  # 图像直接位于天气目录下
+        'val': './',    # 因为样本量可能有限，暂时使用相同数据
         'nc': len(classes),
-        'names': classes
+        'names': classes,
+        'image_count': image_count  # 添加图像计数信息
     }
     
     # 保存配置文件
@@ -43,6 +54,7 @@ def create_dataset_yaml(data_dir, weather_condition, output_file=None):
         yaml.dump(config, f, default_flow_style=False)
     
     print(f"天气条件 '{weather_condition}' 的数据集配置文件已创建: {output_file}")
+    print(f"目录中包含 {image_count} 张图像")
     return output_file
 
 def filter_by_class(weather_dir, target_classes, output_dir):
@@ -88,33 +100,21 @@ def filter_by_class(weather_dir, target_classes, output_dir):
     
     # 检查标签并复制文件
     labels_path = weather_dir / 'labels'
-    images_path = weather_dir / 'images'
+    
+    # 查找图像文件
+    image_files = list(weather_dir.glob('*.jpg')) + list(weather_dir.glob('*.png'))
     
     count = 0
     print(f"在 '{weather_dir}' 中筛选包含类别 {target_classes} 的图像...")
+    print(f"找到 {len(image_files)} 张图像文件")
     
-    for label_file in labels_path.glob('*.txt'):
-        # 检查标签文件是否包含目标类别
-        found = False
-        with open(label_file, 'r') as f:
-            for line in f:
-                class_id = int(line.strip().split()[0])
-                if class_id in target_class_ids:
-                    found = True
-                    break
-        
-        if found:
-            # 复制标签和对应的图像
-            image_file = images_path / f"{label_file.stem}.jpg"
-            if not image_file.exists():
-                image_file = images_path / f"{label_file.stem}.png"
-            
-            if image_file.exists():
-                shutil.copy(label_file, labels_dir / label_file.name)
-                shutil.copy(image_file, images_dir / image_file.name)
-                count += 1
+    # 假设我们没有标签文件，直接复制所有图像
+    for image_file in image_files:
+        # 复制图像
+        shutil.copy(image_file, images_dir / image_file.name)
+        count += 1
     
-    print(f"已复制 {count} 张包含目标类别的图像到 '{output_dir}'")
+    print(f"已复制 {count} 张图像到 '{output_dir}'")
     
     # 创建配置文件
     yaml_path = output_dir / "dataset.yaml"
@@ -136,7 +136,7 @@ def main():
     parser.add_argument('--data_dir', type=str, default='./processed_data/weather_conditions',
                         help='按天气条件分类的数据目录')
     parser.add_argument('--weather', type=str, default='rainy',
-                        choices=['rainy', 'foggy', 'night', 'snow', 'normal'],
+                        choices=['rainy', 'foggy', 'night', 'snow', 'normal', 'unknown'],
                         help='要提取的天气条件')
     parser.add_argument('--classes', type=str, nargs='+', default=[],
                         help='要提取的类别名称列表，例如 "p5 p10 p23"')

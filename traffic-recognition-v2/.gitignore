@@ -74,6 +74,7 @@ backend/models/mobilenet/*.tflite
 backend/models/yolo/*.pt
 backend/models/yolo/*.onnx
 **/data
+**/processed_data
 
 # Temporary files
 *.tmp 
