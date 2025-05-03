@@ -274,11 +274,12 @@ class AdvancedTT100KProcessor:
 
                 # 判断图像是否包含选定频率层级的类别
                 if 'objects' in self.annotations['imgs'][img_id]:
-                    has_selected_category = False
+                    # 记录图像中包含的各频率类别
                     has_high_freq = False
                     has_mid_freq = False
                     has_low_freq = False
 
+                    # 检查图像中所有对象
                     for obj in self.annotations['imgs'][img_id]['objects']:
                         category = obj['category']
                         if category in self.high_freq_classes:
@@ -288,19 +289,36 @@ class AdvancedTT100KProcessor:
                         else:
                             has_low_freq = True
 
-                    # 根据frequency_level判断是否包含所需类别
-                    if 'all' in selected_freq_levels:
-                        has_selected_category = True
-                    else:
-                        if 'high' in selected_freq_levels and has_high_freq:
-                            has_selected_category = True
-                        if 'mid' in selected_freq_levels and has_mid_freq:
-                            has_selected_category = True
-                        if 'low' in selected_freq_levels and has_low_freq:
-                            has_selected_category = True
+                    # 判断是否保留图像 - 更严格的过滤
+                    should_keep = False
+                    selected_freq_levels = self.frequency_level.split(',')
 
-                    if not has_selected_category:
-                        continue  # 跳过不包含所选频率层级类别的图像
+                    if 'all' in selected_freq_levels:
+                        should_keep = True
+                    elif 'high' in selected_freq_levels and not ('mid' in selected_freq_levels) and not ('low' in selected_freq_levels):
+                        # 只保留纯高频图像 (只有高频类别，没有中频和低频)
+                        should_keep = has_high_freq and not has_mid_freq and not has_low_freq
+                    elif 'mid' in selected_freq_levels and not ('high' in selected_freq_levels) and not ('low' in selected_freq_levels):
+                        # 只保留纯中频图像 (只有中频类别，没有高频和低频)
+                        should_keep = has_mid_freq and not has_high_freq and not has_low_freq
+                    elif 'low' in selected_freq_levels and not ('high' in selected_freq_levels) and not ('mid' in selected_freq_levels):
+                        # 只保留纯低频图像 (只有低频类别，没有高频和中频)
+                        should_keep = has_low_freq and not has_high_freq and not has_mid_freq
+                    elif 'high' in selected_freq_levels and 'mid' in selected_freq_levels and not ('low' in selected_freq_levels):
+                        # 只保留高频和中频图像 (没有低频)
+                        should_keep = (
+                            has_high_freq or has_mid_freq) and not has_low_freq
+                    elif 'high' in selected_freq_levels and 'low' in selected_freq_levels and not ('mid' in selected_freq_levels):
+                        # 只保留高频和低频图像 (没有中频)
+                        should_keep = (
+                            has_high_freq or has_low_freq) and not has_mid_freq
+                    elif 'mid' in selected_freq_levels and 'low' in selected_freq_levels and not ('high' in selected_freq_levels):
+                        # 只保留中频和低频图像 (没有高频)
+                        should_keep = (
+                            has_mid_freq or has_low_freq) and not has_high_freq
+
+                    if not should_keep:
+                        continue  # 跳过不符合条件的图像
 
                 image_paths.append((img_path, dataset_dir))
                 image_annotations[img_path] = self.annotations['imgs'][img_id]

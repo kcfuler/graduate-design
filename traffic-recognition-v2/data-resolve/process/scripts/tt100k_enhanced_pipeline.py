@@ -154,7 +154,7 @@ def main():
                 print("请确保已完成步骤1，或检查输出路径")
                 return
 
-            cmd = f"python {script_path} --yolo_dir {stratified_yolo_dir} --output_dir {final_output_dir} --mosaic_count {args.mosaic_count} --mixup_count {args.mixup_count} --copy_orig --seed {args.seed}"
+            cmd = f"python {script_path} --yolo_dir {stratified_yolo_dir} --output_dir {final_output_dir} --mosaic_count {args.mosaic_count} --mixup_count {args.mixup_count} --copy_orig --seed {args.seed} --frequency_level {args.frequency_level}"
 
             if not run_process(cmd, desc=step['desc']):
                 print("数据增强失败，终止流水线")

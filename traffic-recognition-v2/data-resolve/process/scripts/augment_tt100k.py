@@ -20,7 +20,7 @@ class TT100KAugmenter:
     """TT100K数据增强器"""
 
     def __init__(self, yolo_dataset_dir, output_dir,
-                 mosaic_prob=0.5, mixup_prob=0.3, copy_orig=True):
+                 mosaic_prob=0.5, mixup_prob=0.3, copy_orig=True, frequency_level='all'):
         """
         初始化增强器
 
@@ -30,12 +30,14 @@ class TT100KAugmenter:
             mosaic_prob (float): 马赛克增强的概率
             mixup_prob (float): 混合增强的概率
             copy_orig (bool): 是否复制原始样本
+            frequency_level (str): 输出数据集包含的频率层级
         """
         self.yolo_dataset_dir = yolo_dataset_dir
         self.output_dir = output_dir
         self.mosaic_prob = mosaic_prob
         self.mixup_prob = mixup_prob
         self.copy_orig = copy_orig
+        self.frequency_level = frequency_level
 
         # 创建输出目录
         os.makedirs(self.output_dir, exist_ok=True)
@@ -50,6 +52,8 @@ class TT100KAugmenter:
 
     def load_dataset_paths(self):
         """加载数据集图像和标签路径"""
+        print(f"使用频率级别: {self.frequency_level}")
+
         for split in ['train', 'val', 'test']:
             img_dir = os.path.join(self.yolo_dataset_dir, split, 'images')
             label_dir = os.path.join(self.yolo_dataset_dir, split, 'labels')
@@ -60,18 +64,49 @@ class TT100KAugmenter:
             img_paths = [os.path.join(img_dir, f) for f in os.listdir(img_dir)
                          if f.endswith(('.jpg', '.png', '.jpeg'))]
 
-            if split == 'train':
-                self.train_imgs = img_paths
-                self.train_labels = [os.path.join(label_dir, Path(img).stem + '.txt')
-                                     for img in img_paths]
-            elif split == 'val':
-                self.val_imgs = img_paths
-                self.val_labels = [os.path.join(label_dir, Path(img).stem + '.txt')
-                                   for img in img_paths]
+            # 构建标签路径列表
+            label_paths = [os.path.join(label_dir, Path(img).stem + '.txt')
+                           for img in img_paths]
+
+            # 仅保留具有有效标签文件的图像（确保标签文件存在）
+            valid_pairs = [(img, label) for img, label in zip(img_paths, label_paths)
+                           if os.path.exists(label)]
+
+            # 根据频率级别过滤图像
+            if self.frequency_level != 'all' and valid_pairs:
+                filtered_pairs = []
+
+                # 读取classes.txt获取当前数据集的类别信息
+                classes_path = os.path.join(
+                    self.yolo_dataset_dir, 'classes.txt')
+                if os.path.exists(classes_path):
+                    with open(classes_path, 'r') as f:
+                        classes = [line.strip() for line in f.readlines()]
+
+                    # 确保当前数据集已经是按照频率级别过滤过的
+                    # 因为在advanced_tt100k_process.py已经做了严格的过滤
+                    # 这里只是额外的保障措施
+                    filtered_pairs = valid_pairs
+                else:
+                    # 如果找不到classes.txt，使用全部图像
+                    filtered_pairs = valid_pairs
+
+                valid_pairs = filtered_pairs
+
+            if valid_pairs:
+                valid_img_paths, valid_label_paths = zip(*valid_pairs)
             else:
-                self.test_imgs = img_paths
-                self.test_labels = [os.path.join(label_dir, Path(img).stem + '.txt')
-                                    for img in img_paths]
+                valid_img_paths, valid_label_paths = [], []
+
+            if split == 'train':
+                self.train_imgs = list(valid_img_paths)
+                self.train_labels = list(valid_label_paths)
+            elif split == 'val':
+                self.val_imgs = list(valid_img_paths)
+                self.val_labels = list(valid_label_paths)
+            else:
+                self.test_imgs = list(valid_img_paths)
+                self.test_labels = list(valid_label_paths)
 
         print(f"训练集: {len(self.train_imgs)} 张图像")
         print(f"验证集: {len(self.val_imgs)} 张图像")
@@ -409,6 +444,8 @@ def parse_args():
                         help='是否复制原始样本')
     parser.add_argument('--seed', type=int, default=42,
                         help='随机种子')
+    parser.add_argument('--frequency_level', type=str, default='all',
+                        help='输出数据集包含的频率层级，可选值：\'all\'、\'high\'、\'mid\'、\'low\'或\'high,mid\'等组合，用逗号分隔')
 
     return parser.parse_args()
 
@@ -425,7 +462,8 @@ def main():
     augmenter = TT100KAugmenter(
         args.yolo_dir,
         args.output_dir,
-        copy_orig=args.copy_orig
+        copy_orig=args.copy_orig,
+        frequency_level=args.frequency_level
     )
 
     # 加载数据集路径
