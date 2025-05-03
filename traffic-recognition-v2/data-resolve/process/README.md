@@ -72,7 +72,8 @@ $env:PYTHONPATH="./process"; python process/scripts/tt100k_enhanced_pipeline.py 
     --num_clusters 9 \
     --balance_factor 3 \
     --mosaic_count 1000 \
-    --mixup_count 500
+    --mixup_count 500 \
+    --frequency_level all
 
 # Linux/Mac
 PYTHONPATH=./process python process/scripts/tt100k_enhanced_pipeline.py \
@@ -84,7 +85,8 @@ PYTHONPATH=./process python process/scripts/tt100k_enhanced_pipeline.py \
     --num_clusters 9 \
     --balance_factor 3 \
     --mosaic_count 1000 \
-    --mixup_count 500
+    --mixup_count 500 \
+    --frequency_level all
 ```
 
 ## 版本管理机制
@@ -140,6 +142,7 @@ processed_data/
 - `--mosaic_count`：马赛克增强样本数量（默认：1000）
 - `--mixup_count`：Mixup增强样本数量（默认：500）
 - `--selected_types`：只处理指定的类别（可选，默认处理所有类别）
+- `--frequency_level`：输出数据集包含的频率层级，可选值：'all'、'high'、'mid'、'low'或'high,mid'等组合，用逗号分隔（默认：all）
 
 ## 期望效果
 
@@ -148,6 +151,80 @@ processed_data/
 1. 全204类评估时，mAP@0.5可从原始的0.20-0.30提升至0.40-0.50
 2. 对高频类别子集(如≥50张样本的45类)评估时，mAP@0.5可达到0.85-0.90以上
 3. 小目标检测召回率显著提升，Precision-Recall曲线的最大Recall点可从0.3左右提升至0.6以上
+
+## 使用不同频率层级的数据集
+
+通过`--frequency_level`参数，您可以灵活控制输出数据集中包含的类别，以便评估不同类别频率对模型性能的影响：
+
+### 1. 仅使用高频类别训练
+
+```bash
+# Windows PowerShell
+$env:PYTHONPATH="./process"; python process/scripts/tt100k_enhanced_pipeline.py \
+    --data_dir ./data \
+    --output_dir ./processed_data \
+    --model yolo_high \
+    --min_freq_high 50 \
+    --min_freq_mid 10 \
+    --frequency_level high \
+    --mosaic_count 1000 \
+    --mixup_count 500
+```
+
+### 2. 使用高频和中频类别训练
+
+```bash
+# Windows PowerShell
+$env:PYTHONPATH="./process"; python process/scripts/tt100k_enhanced_pipeline.py \
+    --data_dir ./data \
+    --output_dir ./processed_data \
+    --model yolo_high_mid \
+    --min_freq_high 50 \
+    --min_freq_mid 10 \
+    --frequency_level high,mid \
+    --mosaic_count 1000 \
+    --mixup_count 500
+```
+
+### 3. 仅使用中频类别训练
+
+```bash
+# Windows PowerShell
+$env:PYTHONPATH="./process"; python process/scripts/tt100k_enhanced_pipeline.py \
+    --data_dir ./data \
+    --output_dir ./processed_data \
+    --model yolo_mid \
+    --min_freq_high 50 \
+    --min_freq_mid 10 \
+    --frequency_level mid \
+    --mosaic_count 800 \
+    --mixup_count 400
+```
+
+### 4. 仅使用低频类别训练（所有低频类别合并为'unknown_rare'）
+
+```bash
+# Windows PowerShell
+$env:PYTHONPATH="./process"; python process/scripts/tt100k_enhanced_pipeline.py \
+    --data_dir ./data \
+    --output_dir ./processed_data \
+    --model yolo_low \
+    --min_freq_high 50 \
+    --min_freq_mid 10 \
+    --frequency_level low \
+    --mosaic_count 500 \
+    --mixup_count 200
+```
+
+### 模型比较与评估
+
+通过训练不同频率层级的模型，您可以比较：
+
+1. 高频类别模型：类别少但每类样本充足，可能有更高的准确率
+2. 中频类别模型：类别适中，样本相对较少，挑战性更大
+3. 混合模型：包含所有或多种频率层级的类别，更全面但也更具挑战性
+
+这种对比实验有助于理解类别分布对模型性能的影响，并为实际应用中的数据处理策略提供指导。
 
 ## 依赖项
 

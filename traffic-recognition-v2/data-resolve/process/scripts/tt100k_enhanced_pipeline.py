@@ -38,6 +38,8 @@ def parse_args():
                         help='只执行指定的处理步骤编号，可指定多个')
     parser.add_argument('--seed', type=int, default=42,
                         help='随机种子')
+    parser.add_argument('--frequency_level', type=str, default='all',
+                        help='输出数据集包含的频率层级，可选值：\'all\'、\'high\'、\'mid\'、\'low\'或\'high,mid\'等组合，用逗号分隔')
 
     return parser.parse_args()
 
@@ -133,7 +135,7 @@ def main():
 
         if step['id'] == 1:
             # 第一步：分析类别分布并按频次分层
-            cmd = f"python {script_path} --data_dir {args.data_dir} --output_dir {stratified_output_dir} --min_freq_high {args.min_freq_high} --min_freq_mid {args.min_freq_mid} --num_clusters {args.num_clusters} --balance_factor {args.balance_factor} --seed {args.seed}"
+            cmd = f"python {script_path} --data_dir {args.data_dir} --output_dir {stratified_output_dir} --min_freq_high {args.min_freq_high} --min_freq_mid {args.min_freq_mid} --num_clusters {args.num_clusters} --balance_factor {args.balance_factor} --seed {args.seed} --frequency_level {args.frequency_level}"
 
             if args.selected_types:
                 cmd += f" --selected_types {args.selected_types}"
@@ -182,6 +184,7 @@ def create_dataset_readme(args, output_dir, train_id):
         f.write(f"- 高频类别阈值(A类): ≥{args.min_freq_high}张\n")
         f.write(f"- 中频类别阈值(B类): {args.min_freq_mid}-{args.min_freq_high-1}张\n")
         f.write(f"- 低频类别(C类): <{args.min_freq_mid}张 (合并为unknown_rare类)\n")
+        f.write(f"- 包含的频率层级: {args.frequency_level}\n")
         f.write(f"- Anchor boxes聚类数量: {args.num_clusters}\n")
         f.write(f"- 中频类别过采样倍数: {args.balance_factor}\n")
         f.write(f"- 马赛克增强样本数: {args.mosaic_count}\n")
