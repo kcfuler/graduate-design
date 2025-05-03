@@ -37,7 +37,7 @@ def get_next_experiment_number(output_dir='../outputs'):
     return max_num + 1
 
 
-def find_latest_version_dir(base_dir='./processed_data/yolo'):
+def find_latest_version_dir(base_dir='../../../processed_data/yolo/'):
     """查找版本号最大的数据目录"""
     base_path = Path(base_dir)
     if not base_path.exists():
