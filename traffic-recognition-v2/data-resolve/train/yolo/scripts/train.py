@@ -15,6 +15,7 @@ except ImportError:
     print("请先安装ultralytics库: pip install ultralytics")
     sys.exit(1)
 
+
 def parse_args():
     """解析命令行参数"""
     parser = argparse.ArgumentParser(description='使用YOLOv11训练TT100K数据集')
@@ -36,40 +37,46 @@ def parse_args():
                         help='数据加载线程数')
     parser.add_argument('--name', type=str, default='tt100k_yolov11',
                         help='实验名称')
-    
+    parser.add_argument('--project', type=str, default='../outputs',
+                        help='保存结果的项目目录')
+
     return parser.parse_args()
+
 
 def main():
     """主函数"""
     args = parse_args()
-    
+
     # 加载配置文件
     config_path = Path(args.config)
-    
+
     if not config_path.exists():
         print(f"错误: 配置文件不存在: {args.config}")
         sys.exit(1)
-    
+
+    # 获取项目目录的绝对路径
+    project_path = Path(args.project).resolve()
+    project_path.mkdir(exist_ok=True, parents=True)
+
     # 创建模型
-    model = YOLO(f"{args.model}.pt" if args.pretrained is None else args.pretrained)
-    
+    model = YOLO(
+        f"{args.model}.pt" if args.pretrained is None else args.pretrained)
+
     # 训练模型
-    model.train(
+    results = model.train(
         data=str(config_path),
         epochs=args.epochs,
         imgsz=args.img_size,
         batch=args.batch_size,
         name=args.name,
         device=args.device,
-        workers=args.workers
+        workers=args.workers,
+        project=str(project_path)  # 指定保存目录
     )
-    
-    # 保存模型到指定目录
-    model_dir = Path("../models")
-    model_dir.mkdir(exist_ok=True)
-    
-    model.model.save(model_dir / f"{args.name}.pt")
-    print(f"模型已保存到: {model_dir / f'{args.name}.pt'}")
+
+    print(f"模型已保存到: {project_path / args.name}")
+    print(f"最佳模型权重: {project_path / args.name / 'weights' / 'best.pt'}")
+
 
 if __name__ == '__main__':
-    main() 
+    main()
