@@ -27,7 +27,7 @@ def parse_args():
                         help='预训练权重路径，默认使用COCO预训练权重')
     parser.add_argument('--epochs', type=int, default=100,
                         help='训练轮数')
-    parser.add_argument('--batch-size', type=int, default=16,
+    parser.add_argument('--batch-size', type=int, default=-1,
                         help='批次大小')
     parser.add_argument('--img-size', type=int, default=640,
                         help='图像尺寸')
