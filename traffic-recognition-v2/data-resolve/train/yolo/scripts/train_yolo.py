@@ -5,7 +5,9 @@ import os
 import argparse
 import subprocess
 import yaml
+import re
 from pathlib import Path
+
 
 def check_yolo_installed():
     """检查是否安装了YOLO命令行工具"""
@@ -15,19 +17,49 @@ def check_yolo_installed():
     except (FileNotFoundError, subprocess.SubprocessError):
         return False
 
+
+def find_latest_version_dir(base_dir='./processed_data/yolo'):
+    """查找版本号最大的数据目录"""
+    base_path = Path(base_dir)
+    if not base_path.exists():
+        print(f"警告: 基础目录不存在: {base_dir}")
+        return base_dir
+
+    # 查找所有版本目录
+    version_dirs = []
+    for item in base_path.iterdir():
+        if item.is_dir() and re.match(r'^\d+$', item.name):
+            version_dirs.append((int(item.name), item))
+
+    if not version_dirs:
+        print(f"警告: 在 {base_dir} 中未找到任何版本目录")
+        return base_dir
+
+    # 按版本号排序并获取最大版本
+    version_dirs.sort(key=lambda x: x[0], reverse=True)
+    latest_version_dir = version_dirs[0][1] / 'final'
+
+    if not latest_version_dir.exists():
+        print(f"警告: 最新版本的 'final' 目录不存在: {latest_version_dir}")
+        return base_dir
+
+    print(f"找到最新版本数据目录: {latest_version_dir}")
+    return str(latest_version_dir)
+
+
 def create_dataset_yaml(data_dir, output_file='dataset.yaml'):
     """创建YOLO数据集配置文件"""
     data_dir = Path(data_dir)
-    
+
     # 读取类别文件
     classes_file = data_dir / 'classes.txt'
     if not classes_file.exists():
         print(f"错误: 类别文件不存在 {classes_file}")
         return None
-    
+
     with open(classes_file, 'r') as f:
         classes = [line.strip() for line in f.readlines()]
-    
+
     # 创建YAML配置
     config = {
         'path': str(data_dir.absolute()),
@@ -37,25 +69,26 @@ def create_dataset_yaml(data_dir, output_file='dataset.yaml'):
         'nc': len(classes),
         'names': classes
     }
-    
+
     # 确保输出目录存在
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
-    
+
     # 保存配置文件
     with open(output_file, 'w') as f:
         yaml.dump(config, f, default_flow_style=False)
-    
+
     print(f"数据集配置文件已创建: {output_file}")
     return output_file
 
-def train_yolo(data_yaml, model='yolo11n.pt', epochs=100, img_size=640, batch_size=16, 
+
+def train_yolo(data_yaml, model='yolo11n.pt', epochs=100, img_size=640, batch_size=16,
                pretrained=True, device='0', project='runs/train', name='exp'):
     """训练YOLO模型"""
     if not check_yolo_installed():
         print("错误: YOLO命令行工具未安装，请先安装它")
         print("提示: 可以通过 'pip install ultralytics' 安装")
         return False
-    
+
     # 构建训练命令
     cmd = [
         'yolo', 'train',
@@ -68,11 +101,11 @@ def train_yolo(data_yaml, model='yolo11n.pt', epochs=100, img_size=640, batch_si
         f'project={project}',
         f'name={name}'
     ]
-    
+
     # 执行训练命令
     print("开始训练YOLO模型...")
     print(f"执行命令: {' '.join(cmd)}")
-    
+
     try:
         subprocess.run(cmd)
         return True
@@ -80,10 +113,11 @@ def train_yolo(data_yaml, model='yolo11n.pt', epochs=100, img_size=640, batch_si
         print(f"训练过程出错: {e}")
         return False
 
+
 def main():
     parser = argparse.ArgumentParser(description='训练YOLO模型')
-    parser.add_argument('--data_dir', type=str, default='./processed_data/yolo',
-                        help='处理后的YOLO格式数据目录')
+    parser.add_argument('--data_dir', type=str, default=None,
+                        help='处理后的YOLO格式数据目录，不指定则自动查找最新版本')
     parser.add_argument('--model', type=str, default='yolo11n.pt',
                         help='YOLO模型版本，例如yolo11n.pt')
     parser.add_argument('--epochs', type=int, default=100,
@@ -100,22 +134,27 @@ def main():
                         help='保存结果的项目目录')
     parser.add_argument('--name', type=str, default='tt100k',
                         help='实验名称')
-    
+
     args = parser.parse_args()
-    
+
+    # 如果未指定数据目录，查找最新版本的数据目录
+    if args.data_dir is None:
+        args.data_dir = find_latest_version_dir()
+
     # 检查数据目录
     if not os.path.exists(args.data_dir):
         print(f"错误: 数据目录不存在: {args.data_dir}")
         return
-    
+
     # 创建数据集配置
-    data_yaml = create_dataset_yaml(args.data_dir, f"{args.project}/dataset.yaml")
+    data_yaml = create_dataset_yaml(
+        args.data_dir, f"{args.project}/dataset.yaml")
     if not data_yaml:
         return
-    
+
     # 训练模型
     model = args.model if args.pretrained else f'yolo11n'
-    
+
     train_yolo(
         data_yaml=data_yaml,
         model=model,
@@ -128,5 +167,6 @@ def main():
         name=args.name
     )
 
+
 if __name__ == "__main__":
-    main() 
+    main()

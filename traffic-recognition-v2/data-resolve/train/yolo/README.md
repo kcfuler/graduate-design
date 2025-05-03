@@ -44,7 +44,7 @@ YOLO训练系统支持以下主要参数：
 确保您的数据集已经按照YOLO格式进行组织：
 
 ```
-processed_data/final/
+processed_data/yolo/1/final/
 │
 ├── train/
 │   ├── images/
@@ -61,12 +61,14 @@ processed_data/final/
 └── classes.txt     # 类别名称列表
 ```
 
+注意：processed_data使用版本管理机制，目录结构为`processed_data/模型/训练次数/final`。
+
 ### 2. 配置数据集
 
 检查并修改`configs/tt100k.yaml`文件，确保路径和类别信息正确：
 
 ```yaml
-path: ../../processed_data/final  # 数据集根目录
+path: ../../processed_data/yolo/1/final  # 数据集根目录（指向最新版本）
 train: train/images  # 训练图像
 val: val/images  # 验证图像
 test: test/images  # 测试图像
@@ -95,7 +97,6 @@ bun train/yolo/scripts/train.py \
 
 ```bash
 bun train/yolo/scripts/train_yolo.py \
-  --data_dir ./processed_data/yolo \
   --model yolo11n.pt \
   --epochs 100 \
   --img_size 640 \
@@ -103,6 +104,22 @@ bun train/yolo/scripts/train_yolo.py \
   --device 0 \
   --project runs/train \
   --name tt100k
+```
+
+**注意：** 现在脚本会自动查找 `processed_data/yolo` 目录下版本号最大的数据目录（格式为 `processed_data/yolo/版本号/final`），无需手动指定 `--data_dir` 参数。
+
+如果需要指定特定版本的数据，可以使用 `--data_dir` 参数：
+
+```bash
+bun train/yolo/scripts/train_yolo.py \
+  --data_dir ./processed_data/yolo/2/final \
+  --model yolo11n.pt \
+  --epochs 100 \
+  --img_size 640 \
+  --batch_size 16 \
+  --device 0 \
+  --project runs/train \
+  --name tt100k_v2
 ```
 
 ### 4. 测试模型
@@ -161,4 +178,8 @@ runs/train/experiment_name/
 2. 推荐使用GPU进行训练以获得更好的性能
 3. 对于大型数据集，请调整`batch-size`以适应您的GPU内存
 4. 使用`--pretrained`参数可以利用预训练权重加速收敛
-5. 模型训练结果将保存在`runs/train/`目录下 
+5. 模型训练结果将保存在`runs/train/`目录下
+6. 处理后的数据遵循版本管理机制，保存在`processed_data/模型/训练次数/final`目录结构中
+   - 例如：`processed_data/yolo/1/final`表示使用yolo模型的第一次训练数据
+   - 脚本现在会自动查找序号最大的版本目录（最新版本）
+   - 如需使用特定版本的数据，请通过`--data_dir`参数明确指定路径 
