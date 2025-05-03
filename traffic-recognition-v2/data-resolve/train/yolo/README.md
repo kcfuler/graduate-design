@@ -83,45 +83,16 @@ names: []  # 类别名称（将在训练时自动填充）
 #### 方式1：使用简化的训练脚本
 
 ```bash
-bun train/yolo/scripts/train.py \
-  --config train/yolo/configs/tt100k.yaml \
+cd train/yolo/scripts && python train.py \
+  --config ../configs/tt100k.yaml \
   --model yolov11n \
   --epochs 100 \
   --batch-size 16 \
   --img-size 640 \
   --device 0 \
-  --name tt100k_yolov11
+  --name tt100k_yolo11n \
+  --pretrained yolo11n.pt
 ```
-
-#### 方式2：使用完整的训练脚本（命令行工具封装）
-
-```bash
-bun train/yolo/scripts/train_yolo.py \
-  --model yolo11n.pt \
-  --epochs 100 \
-  --img_size 640 \
-  --batch_size 16 \
-  --device 0 \
-  --project runs/train \
-  --name tt100k
-```
-
-**注意：** 现在脚本会自动查找 `processed_data/yolo` 目录下版本号最大的数据目录（格式为 `processed_data/yolo/版本号/final`），无需手动指定 `--data_dir` 参数。
-
-如果需要指定特定版本的数据，可以使用 `--data_dir` 参数：
-
-```bash
-bun train/yolo/scripts/train_yolo.py \
-  --data_dir ./processed_data/yolo/2/final \
-  --model yolo11n.pt \
-  --epochs 100 \
-  --img_size 640 \
-  --batch_size 16 \
-  --device 0 \
-  --project runs/train \
-  --name tt100k_v2
-```
-
 ### 4. 测试模型
 
 训练完成后，使用以下命令测试模型：
