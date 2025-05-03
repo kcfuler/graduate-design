@@ -16,6 +16,8 @@ def parse_args():
                         help='TT100K原始数据集根目录')
     parser.add_argument('--output_dir', type=str, required=True,
                         help='处理后数据的输出目录')
+    parser.add_argument('--model', type=str, default='yolo',
+                        help='模型名称，用于目录结构分类')
     parser.add_argument('--min_freq_high', type=int, default=50,
                         help='高频类别的最小频次阈值（A类）')
     parser.add_argument('--min_freq_mid', type=int, default=10,
@@ -54,6 +56,22 @@ def run_process(cmd, desc="执行命令"):
         return False
 
 
+def get_next_train_id(base_dir, model_name):
+    """获取下一个训练ID（训练次数）"""
+    model_dir = os.path.join(base_dir, model_name)
+
+    if not os.path.exists(model_dir):
+        return 1
+
+    existing_trains = [d for d in os.listdir(model_dir)
+                       if os.path.isdir(os.path.join(model_dir, d)) and d.isdigit()]
+
+    if not existing_trains:
+        return 1
+
+    return max(map(int, existing_trains)) + 1
+
+
 def main():
     """主处理流水线"""
     args = parse_args()
@@ -77,8 +95,20 @@ def main():
         }
     ]
 
-    # 创建输出目录
+    # 创建基础输出目录
     os.makedirs(args.output_dir, exist_ok=True)
+
+    # 获取下一个训练次数
+    train_id = get_next_train_id(args.output_dir, args.model)
+
+    # 构建版本化输出路径：processed_data/模型/训练次数
+    model_dir = os.path.join(args.output_dir, args.model)
+    os.makedirs(model_dir, exist_ok=True)
+
+    train_dir = os.path.join(model_dir, str(train_id))
+    os.makedirs(train_dir, exist_ok=True)
+
+    print(f"创建训练数据目录: {train_dir} (第{train_id}次训练)")
 
     # 确定要执行的步骤
     steps_to_run = []
@@ -89,8 +119,8 @@ def main():
                         not in args.skip_step]
 
     # 中间目录
-    stratified_output_dir = os.path.join(args.output_dir, 'stratified')
-    final_output_dir = os.path.join(args.output_dir, 'final')
+    stratified_output_dir = os.path.join(train_dir, 'stratified')
+    final_output_dir = os.path.join(train_dir, 'final')
 
     # 执行流水线
     for step in steps_to_run:
@@ -129,22 +159,25 @@ def main():
                 return
 
     # 创建最终数据集说明
-    create_dataset_readme(args, final_output_dir)
+    create_dataset_readme(args, final_output_dir, train_id)
 
     # 汇总处理结果
     print("\n" + "="*80)
     print("TT100K数据处理流水线已完成")
     print(f"最终数据集位置: {final_output_dir}")
+    print(f"训练次数: 第{train_id}次")
     print("="*80 + "\n")
 
 
-def create_dataset_readme(args, output_dir):
+def create_dataset_readme(args, output_dir, train_id):
     """创建数据集说明文件"""
     readme_path = os.path.join(output_dir, "DATASET_INFO.md")
 
     with open(readme_path, 'w', encoding='utf-8') as f:
         f.write("# TT100K增强数据集\n\n")
-        f.write("## 处理参数\n\n")
+        f.write(f"## 处理信息\n\n")
+        f.write(f"- 模型: {args.model}\n")
+        f.write(f"- 训练次数: {train_id}\n")
         f.write(f"- 原始数据集目录: `{args.data_dir}`\n")
         f.write(f"- 高频类别阈值(A类): ≥{args.min_freq_high}张\n")
         f.write(f"- 中频类别阈值(B类): {args.min_freq_mid}-{args.min_freq_high-1}张\n")

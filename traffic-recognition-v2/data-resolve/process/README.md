@@ -66,6 +66,7 @@ process/
 $env:PYTHONPATH="./process"; python process/scripts/tt100k_enhanced_pipeline.py \
     --data_dir ./data \
     --output_dir ./processed_data \
+    --model yolo \
     --min_freq_high 50 \
     --min_freq_mid 10 \
     --num_clusters 9 \
@@ -77,6 +78,7 @@ $env:PYTHONPATH="./process"; python process/scripts/tt100k_enhanced_pipeline.py 
 PYTHONPATH=./process python process/scripts/tt100k_enhanced_pipeline.py \
     --data_dir ./data \
     --output_dir ./processed_data \
+    --model yolo \
     --min_freq_high 50 \
     --min_freq_mid 10 \
     --num_clusters 9 \
@@ -85,80 +87,52 @@ PYTHONPATH=./process python process/scripts/tt100k_enhanced_pipeline.py \
     --mixup_count 500
 ```
 
-### 分步执行
+## 版本管理机制
 
-如果需要分步执行或自定义处理过程：
+脚本实现了自动版本管理功能，具体工作方式如下：
 
-#### 1. 分层处理
+1. 处理后的数据将按照`processed_data/模型/训练次数`的结构进行组织
+2. 每次运行脚本时，会自动检测已存在的训练次数，并创建新的训练数据目录
+3. 例如:
+   - 第一次训练: `processed_data/yolo/1/`
+   - 第二次训练: `processed_data/yolo/2/`
+   - 对新模型的训练: `processed_data/mobilenet/1/`
 
-```bash
-# Windows PowerShell
-$env:PYTHONPATH="./process"; python process/scripts/advanced_tt100k_process.py \
-    --data_dir ./data \
-    --output_dir ./processed_data/stratified \
-    --min_freq_high 50 \
-    --min_freq_mid 10 \
-    --num_clusters 9 \
-    --balance_factor 3
-
-# Linux/Mac
-PYTHONPATH=./process python process/scripts/advanced_tt100k_process.py \
-    --data_dir ./data \
-    --output_dir ./processed_data/stratified \
-    --min_freq_high 50 \
-    --min_freq_mid 10 \
-    --num_clusters 9 \
-    --balance_factor 3
-```
-
-#### 2. 数据增强
-
-```bash
-# Windows PowerShell
-$env:PYTHONPATH="./process"; python process/scripts/augment_tt100k.py \
-    --yolo_dir ./processed_data/stratified/yolo_stratified \
-    --output_dir ./processed_data/final \
-    --mosaic_count 1000 \
-    --mixup_count 500 \
-    --copy_orig
-
-# Linux/Mac
-PYTHONPATH=./process python process/scripts/augment_tt100k.py \
-    --yolo_dir ./processed_data/stratified/yolo_stratified \
-    --output_dir ./processed_data/final \
-    --mosaic_count 1000 \
-    --mixup_count 500 \
-    --copy_orig
-```
+通过这种方式，可以方便地对比不同处理参数的效果，或保留多个不同版本的训练数据，同时保持目录结构清晰。在实验过程中，可以通过`--model`参数指定不同模型名称，系统会自动为每个模型单独创建训练目录。
 
 ## 处理后的数据结构
 
-成功处理后，输出目录将包含以下结构：
+成功处理后，版本化的输出目录将包含以下结构：
 
 ```
 processed_data/
-├── stratified/                # 分层处理的中间输出
-│   ├── anchors.txt            # 聚类生成的anchor boxes
-│   ├── class_frequency.json   # 类别频次统计
-│   └── yolo_stratified/       # 分层采样后的YOLO格式数据
-│       ├── classes.txt        # 类别名称文件
-│       ├── tt100k.yaml        # YOLO配置文件
-│       ├── train/             # 训练集
-│       ├── val/               # 验证集
-│       └── test/              # 测试集
-└── final/                     # 增强后的最终数据
-    ├── classes.txt            # 类别名称文件 
-    ├── tt100k.yaml            # YOLO配置文件
-    ├── DATASET_INFO.md        # 数据集信息说明
-    ├── train/                 # 训练集
-    ├── val/                   # 验证集
-    └── test/                  # 测试集
+├── yolo/                         # 模型类型目录
+│   ├── 1/                        # 第一次训练
+│   │   ├── stratified/           # 分层处理的中间输出
+│   │   │   ├── anchors.txt       # 聚类生成的anchor boxes
+│   │   │   ├── class_frequency.json  # 类别频次统计
+│   │   │   └── yolo_stratified/  # 分层采样后的YOLO格式数据
+│   │   └── final/                # 增强后的最终数据
+│   │       ├── classes.txt       # 类别名称文件 
+│   │       ├── tt100k.yaml       # YOLO配置文件
+│   │       ├── DATASET_INFO.md   # 数据集信息说明
+│   │       └── ...
+│   └── 2/                        # 第二次训练(参数调整后)
+│       ├── stratified/
+│       └── final/
+└── mobilenet/                    # 另一种模型的处理结果
+    └── 1/
+        ├── stratified/
+        └── final/
 ```
 
 ## 参数说明
 
 主要参数解释：
 
+- `--data_dir`：TT100K原始数据集根目录（必须指定）
+- `--output_dir`：处理后数据的基础输出目录（必须指定）
+- `--model`：模型名称，用于目录结构分类（默认：yolo）
 - `--min_freq_high`：高频类别的最小频次阈值（默认：50）
 - `--min_freq_mid`：中频类别的最小频次阈值（默认：10）
 - `--num_clusters`：Anchor box聚类数量（默认：9）
