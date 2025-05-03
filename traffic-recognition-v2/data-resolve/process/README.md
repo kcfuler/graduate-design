@@ -173,7 +173,7 @@ processed_data/
 $env:PYTHONPATH="./process"; python process/scripts/tt100k_enhanced_pipeline.py \
     --data_dir ./data \
     --output_dir ./processed_data \
-    --model yolo_high \
+    --model yolo \
     --min_freq_high 50 \
     --min_freq_mid 10 \
     --frequency_level high \
