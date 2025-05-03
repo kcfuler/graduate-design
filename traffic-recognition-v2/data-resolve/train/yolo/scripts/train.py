@@ -5,6 +5,7 @@ import os
 import sys
 import argparse
 import yaml
+import re
 from pathlib import Path
 
 # 导入YOLO相关库
@@ -14,6 +15,25 @@ try:
 except ImportError:
     print("请先安装ultralytics库: pip install ultralytics")
     sys.exit(1)
+
+
+def get_next_experiment_number(output_dir='../outputs'):
+    """获取下一个可用的实验编号"""
+    output_path = Path(output_dir)
+    if not output_path.exists():
+        return 1
+
+    # 查找所有t-N格式的目录
+    max_num = 0
+    for item in output_path.iterdir():
+        if item.is_dir() and re.match(r'^t-\d+$', item.name):
+            try:
+                num = int(item.name.split('-')[1])
+                max_num = max(max_num, num)
+            except (IndexError, ValueError):
+                continue
+
+    return max_num + 1
 
 
 def parse_args():
@@ -35,8 +55,8 @@ def parse_args():
                         help='训练设备, 例如: cpu, 0, 0,1,2,3')
     parser.add_argument('--workers', type=int, default=8,
                         help='数据加载线程数')
-    parser.add_argument('--name', type=str, default='tt100k_yolov11',
-                        help='实验名称')
+    parser.add_argument('--name', type=str, default='t-1',
+                        help='实验名称，格式为t-N')
     parser.add_argument('--project', type=str, default='../outputs',
                         help='保存结果的项目目录')
 
@@ -57,6 +77,12 @@ def main():
     # 获取项目目录的绝对路径
     project_path = Path(args.project).resolve()
     project_path.mkdir(exist_ok=True, parents=True)
+
+    # 如果使用默认实验名称t-1，自动获取下一个可用编号
+    if args.name == 't-1':
+        next_num = get_next_experiment_number(args.project)
+        args.name = f't-{next_num}'
+        print(f"自动设置实验名称为: {args.name}")
 
     # 创建模型
     model = YOLO(

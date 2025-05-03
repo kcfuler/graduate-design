@@ -18,6 +18,25 @@ def check_yolo_installed():
         return False
 
 
+def get_next_experiment_number(output_dir='../outputs'):
+    """获取下一个可用的实验编号"""
+    output_path = Path(output_dir)
+    if not output_path.exists():
+        return 1
+
+    # 查找所有t-N格式的目录
+    max_num = 0
+    for item in output_path.iterdir():
+        if item.is_dir() and re.match(r'^t-\d+$', item.name):
+            try:
+                num = int(item.name.split('-')[1])
+                max_num = max(max_num, num)
+            except (IndexError, ValueError):
+                continue
+
+    return max_num + 1
+
+
 def find_latest_version_dir(base_dir='./processed_data/yolo'):
     """查找版本号最大的数据目录"""
     base_path = Path(base_dir)
@@ -124,16 +143,16 @@ def main():
                         help='训练轮数')
     parser.add_argument('--img_size', type=int, default=640,
                         help='输入图像尺寸')
-    parser.add_argument('--batch_size', type=int, default=16,
+    parser.add_argument('--batch_size', type=int, default=-1,
                         help='批次大小')
     parser.add_argument('--pretrained', action='store_true',
                         help='使用预训练模型')
     parser.add_argument('--device', type=str, default='0',
                         help='训练设备（GPU ID），例如0或0,1,2,3')
-    parser.add_argument('--project', type=str, default='runs/train',
+    parser.add_argument('--project', type=str, default='../outputs',
                         help='保存结果的项目目录')
-    parser.add_argument('--name', type=str, default='tt100k',
-                        help='实验名称')
+    parser.add_argument('--name', type=str, default='t-1',
+                        help='实验名称，格式为t-N')
 
     args = parser.parse_args()
 
@@ -151,6 +170,12 @@ def main():
         args.data_dir, f"{args.project}/dataset.yaml")
     if not data_yaml:
         return
+
+    # 如果使用默认实验名称t-1，自动获取下一个可用编号
+    if args.name == 't-1':
+        next_num = get_next_experiment_number(args.project)
+        args.name = f't-{next_num}'
+        print(f"自动设置实验名称为: {args.name}")
 
     # 训练模型
     model = args.model if args.pretrained else f'yolo11n'
