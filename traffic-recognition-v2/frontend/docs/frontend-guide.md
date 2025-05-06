@@ -218,7 +218,7 @@ bun run dev
 
 | 错误信息 | 原因 | 解决方案 |
 |----------|------|----------|
-| `模块""antd""没有导出的成员"Layout"` | React 版本不兼容（如使用 React 19.x） | 降级 React 到 18.2.0: `npm install react@18.2.0 react-dom@18.2.0` |
+| `模块""antd""没有导出的成员"Layout"` | antd 5.x 版本组件导入方式发生变化 | 使用子模块路径导入: `import Layout from 'antd/es/layout'; const { Content } = Layout;` |
 | `invalid: react@19.1.0` | React 版本与 antd 或其他库不兼容 | 确保使用兼容的 React 版本（18.x 或以下） |
 | `找不到模块"antd"或其相应的类型声明` | antd 未正确安装或导入路径错误 | 重新安装: `npm install antd@5.24.8` |
 

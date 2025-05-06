@@ -1,5 +1,6 @@
 import React from 'react';
-import { Layout } from 'antd';
+import Layout from 'antd/es/layout';
+const { Content } = Layout;
 import Header from './components/Header';
 import InferenceLayout from './components/InferenceLayout';
 
@@ -7,9 +8,9 @@ const App: React.FC = () => {
   return (
     <Layout className="min-h-screen">
       <Header />
-      <Layout.Content>
+      <Content>
         <InferenceLayout />
-      </Layout.Content>
+      </Content>
     </Layout>
   );
 };
