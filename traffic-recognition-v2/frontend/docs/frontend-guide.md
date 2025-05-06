@@ -9,14 +9,24 @@
 ## 技术栈
 
 - **UI框架**: React + TypeScript
+  - 注意：需使用 React 16.x、17.x 或 18.x 版本，目前不兼容 React 19.x
 - **构建工具**: rsbuild
 - **包管理工具**: bun
 - **CSS方案**: Tailwind CSS
-- **组件库**: antd
+- **组件库**: antd 5.x
+  - 目前 antd 5.x 仅兼容 React 16.x/17.x/18.x，不兼容 React 19.x
 - **react hooks**: ahooks
 - **代码质量**: oxlint
 
 使用 useRequest 管理API请求
+
+### 依赖兼容性
+
+请注意以下依赖版本约束：
+- React: 请使用 18.2.0 或其他兼容版本（v16.x/v17.x/v18.x），避免使用 19.x
+- React DOM: 需与 React 版本保持一致
+- antd: 5.x 系列仅支持 React 18.x 及以下版本
+- 如果遇到组件导入问题，请检查依赖版本兼容性
 
 ## 前端目录结构
 
@@ -30,7 +40,7 @@ frontend/
 │   │   ├── MediaUploader.tsx  # 媒体上传组件
 │   │   ├── ResultDisplay.tsx  # 结果显示组件
 │   │   ├── MetricsDisplay.tsx # 指标显示组件
-│   │   ├── InferenceLayout.tsx # 推理主界面组件
+│   │   └── InferenceLayout.tsx # 推理主界面组件
 │   ├── services/           # API服务
 │   │   └── api.ts          # API请求封装
 │   ├── hooks/              # 自定义钩子
@@ -160,6 +170,9 @@ cd frontend
 # 安装依赖
 bun install
 
+# 若使用 npm，确保安装兼容版本的 React
+npm install react@18.2.0 react-dom@18.2.0
+
 # 启动开发服务器
 bun run dev
 ```
@@ -198,6 +211,16 @@ bun run dev
 | `INVALID_IMAGE_FORMAT` | 图像格式无效 | 400 |
 | `BACKEND_UNAVAILABLE` | 后端服务不可用 | 503 |
 | `BACKEND_TIMEOUT` | 后端服务响应超时 | 504 |
+
+### 依赖相关错误处理
+
+在开发过程中，可能会遇到以下与依赖相关的错误：
+
+| 错误信息 | 原因 | 解决方案 |
+|----------|------|----------|
+| `模块""antd""没有导出的成员"Layout"` | React 版本不兼容（如使用 React 19.x） | 降级 React 到 18.2.0: `npm install react@18.2.0 react-dom@18.2.0` |
+| `invalid: react@19.1.0` | React 版本与 antd 或其他库不兼容 | 确保使用兼容的 React 版本（18.x 或以下） |
+| `找不到模块"antd"或其相应的类型声明` | antd 未正确安装或导入路径错误 | 重新安装: `npm install antd@5.24.8` |
 
 ## 生产环境部署
 
