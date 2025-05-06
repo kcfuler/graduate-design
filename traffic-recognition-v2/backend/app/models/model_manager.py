@@ -3,8 +3,6 @@ from typing import Dict, Any, Optional
 from pathlib import Path
 
 from app.core.config import get_model_by_id, get_registered_models, ROOT_DIR
-from app.models.mobilenet.model import MobileNetModel
-from app.models.yolo.model import YoloModel
 from app.models.mobilenet_v3.model import MobileNetV3Model
 from app.models.yolov11.model import YOLOv11Model
 
@@ -54,10 +52,6 @@ class ModelManager:
             model = MobileNetV3Model(model_path)
         elif model_id == "yolov11_tsr":
             model = YOLOv11Model(model_path)
-        elif model_type == "mobilenet":
-            model = MobileNetModel(model_path)
-        elif model_type == "yolo":
-            model = YoloModel(model_path)
         else:
             raise ValueError(f"不支持的模型类型: {model_type}")
         
