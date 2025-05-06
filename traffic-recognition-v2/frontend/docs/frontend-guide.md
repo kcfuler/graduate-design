@@ -16,6 +16,8 @@
 - **react hooks**: ahooks
 - **代码质量**: oxlint
 
+使用 useRequest 管理API请求
+
 ## 前端目录结构
 
 ```
