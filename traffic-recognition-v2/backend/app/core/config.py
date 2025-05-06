@@ -7,7 +7,7 @@ from typing import List, Dict, Any
 ROOT_DIR = Path(__file__).resolve().parents[2]
 
 # 定义模型目录
-MODELS_DIR = ROOT_DIR / "models"
+MODELS_DIR = ROOT_DIR / "app" / "models"
 
 # 模型配置文件路径
 MODEL_CONFIG_PATH = MODELS_DIR / "config.json"
@@ -31,7 +31,14 @@ def get_registered_models() -> List[Dict[str, Any]]:
     获取所有注册的模型信息
     """
     config = load_model_config()
-    return config.get("models", [])
+    models_dict = config.get("models", {}) # Get the dictionary
+    registered_models = []
+    for model_id, model_info in models_dict.items():
+        # Add the model_id to its info, as this is expected by other parts of the code
+        model_entry = model_info.copy() # Avoid modifying the original config data
+        model_entry["id"] = model_id
+        registered_models.append(model_entry)
+    return registered_models
 
 # 根据ID获取模型信息
 def get_model_by_id(model_id: str) -> Dict[str, Any]:

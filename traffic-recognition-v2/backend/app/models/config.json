@@ -1,0 +1,45 @@
+{
+  "models": {
+    "yolov11": {
+      "name": "YOLOv11",
+      "description": "用于交通标志检测的YOLOv11模型",
+      "url": "https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11n.pt",
+      "hash": "0ebbc80d4a7680d14987a577cd21342b65ecfd94632bd9a8da63ae6417644ee1",
+      "hash_type": "sha256",
+      "format": "pt",
+      "file_name": "yolov11n.pt",
+      "input_size": [1280, 1280],
+      "class_names": [
+        "stop_sign", "yield", "speed_limit_30", "speed_limit_50", 
+        "speed_limit_60", "speed_limit_80", "no_entry", "no_parking",
+        "pedestrian_crossing", "traffic_light", "construction_ahead"
+      ],
+      "model_type": "object_detection",
+      "framework": "pytorch",
+      "version": "11.0"
+    },
+    "mobilenet_v3": {
+      "name": "MobileNetV3",
+      "description": "用于交通标志分类的MobileNetV3模型",
+      "url": "https://storage.googleapis.com/tensorflow/keras-applications/mobilenet_v3/weights_mobilenet_v3_small_224_1.0_float_no_top.h5",
+      "hash": "ca980ebe2f12a6ed62d30303afefa4254b79d2c932ab92fa5bbd80789064ef6e",
+      "hash_type": "sha256",
+      "format": "keras",
+      "file_name": "mobileNet.h5",
+      "input_size": [224, 224],
+      "class_names": [
+        "stop_sign", "yield", "speed_limit_30", "speed_limit_50", 
+        "speed_limit_60", "speed_limit_80", "no_entry", "no_parking",
+        "pedestrian_crossing", "traffic_light", "construction_ahead"
+      ],
+      "model_type": "classification",
+      "framework": "tensorflow",
+      "version": "3.0"
+    }
+  },
+  "settings": {
+    "cache_dir": "cache",
+    "model_dir": "backend/app/models/weights",
+    "default_model": "yolov11"
+  }
+}

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-from app.api.routes import models, inference, metrics, training
+from app.api.routes import models, inference
 
 app = FastAPI(
     title="交通标志识别API",
@@ -22,8 +22,6 @@ app.add_middleware(
 # 注册路由
 app.include_router(models.router, prefix="/models", tags=["模型管理"])
 app.include_router(inference.router, prefix="/infer", tags=["推理"])
-app.include_router(metrics.router, prefix="/metrics", tags=["模型指标"])
-app.include_router(training.router, prefix="/train", tags=["模型训练"])
 
 @app.get("/", tags=["健康检查"])
 async def root():

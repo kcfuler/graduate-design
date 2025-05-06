@@ -7,6 +7,9 @@ export default defineConfig({
     alias: {
       '@': './src',
     },
+    entry: {
+      index: './src/index.tsx'
+    }
   },
   server: {
     port: 5173,
