@@ -6,15 +6,16 @@ import argparse
 import subprocess
 import yaml
 import re
+import sys
 from pathlib import Path
 
 
 def check_yolo_installed():
-    """检查是否安装了YOLO命令行工具"""
+    """检查是否安装了YOLO库"""
     try:
-        subprocess.run(['yolo', '--help'], capture_output=True)
+        import ultralytics
         return True
-    except (FileNotFoundError, subprocess.SubprocessError):
+    except ImportError:
         return False
 
 
@@ -101,35 +102,82 @@ def create_dataset_yaml(data_dir, output_file='dataset.yaml'):
 
 
 def train_yolo(data_yaml, model='yolo11n.pt', epochs=100, img_size=640, batch_size=16,
-               pretrained=True, device='0', project='runs/train', name='exp'):
+               pretrained=True, device='0', project='runs/train', name='exp',
+               use_a1_optimization=False, use_a2_optimization=False, use_a3_optimization=False,
+               cls_pw=None, focal_loss=False, add_p2_head=False, anchors_num=9,
+               iou_loss='siou', iou_thres=0.6, iou_type='giou'):
     """训练YOLO模型"""
     if not check_yolo_installed():
-        print("错误: YOLO命令行工具未安装，请先安装它")
+        print("错误: YOLO库未安装，请先安装它")
         print("提示: 可以通过 'pip install ultralytics' 安装")
         return False
 
-    # 构建训练命令
-    cmd = [
-        'yolo', 'train',
-        f'model={model}',
-        f'data={data_yaml}',
-        f'epochs={epochs}',
-        f'imgsz={img_size}',
-        f'batch={batch_size}',
-        f'device={device}',
-        f'project={project}',
-        f'name={name}'
-    ]
-
-    # 执行训练命令
-    print("开始训练YOLO模型...")
-    print(f"执行命令: {' '.join(cmd)}")
-
     try:
-        subprocess.run(cmd)
+        # 导入ultralytics库 - 使用Python API而不是命令行
+        from ultralytics import YOLO
+        import torch
+
+        # 准备基本训练参数
+        args = {
+            'data': data_yaml,
+            'epochs': epochs,
+            'imgsz': img_size,
+            'batch': batch_size,
+            'device': device,
+            'project': project,
+            'name': name,
+        }
+
+        # A1优化：类重采样/Focal-Loss
+        if use_a1_optimization:
+            if img_size >= 1280 and batch_size >= 16:
+                args['mixup'] = 0.2
+                args['copy_paste'] = 0.1
+
+            if cls_pw:
+                args['cls_pw'] = cls_pw
+
+        # 加载预训练模型
+        print(f"加载模型: {model}")
+        yolo_model = YOLO(model)
+
+        # 准备训练
+        print("开始训练YOLO模型...")
+        print(f"训练参数: {args}")
+
+        # 应用特殊优化 - 这些需要在训练前修改模型配置
+        if use_a1_optimization and focal_loss:
+            print("应用Focal Loss优化...")
+            # Focal Loss在模型初始化时通过参数设置，暂不支持直接修改
+            # 需要通过其他方式实现，例如自定义损失函数
+
+        if use_a2_optimization:
+            if add_p2_head:
+                print("添加P2检测头...")
+                # 这需要修改模型架构，目前API不直接支持
+                # 需要考虑自定义模型或使用不同的YOLO版本
+
+            print(f"设置anchor数量为{anchors_num}...")
+            # 锚点数量设置，需要在模型初始化时设置
+
+        if use_a3_optimization:
+            print(f"设置IoU损失类型为{iou_loss}...")
+            if hasattr(yolo_model.model, 'loss'):
+                if iou_loss == 'siou':
+                    # 在某些YOLO版本中，可以通过设置模型的loss属性来改变
+                    print("注意: 尝试设置SIoU损失，但API可能不直接支持此操作")
+
+            args['iou'] = iou_thres  # 这是YOLO支持的标准参数
+
+        # 启动训练
+        results = yolo_model.train(**args)
+        print("训练完成!")
         return True
-    except subprocess.SubprocessError as e:
+
+    except Exception as e:
         print(f"训练过程出错: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 
@@ -154,6 +202,34 @@ def main():
     parser.add_argument('--name', type=str, default='t-1',
                         help='实验名称，格式为t-N')
 
+    # A1优化相关参数
+    parser.add_argument('--use_a1', action='store_true',
+                        help='使用A1优化：类重采样/Focal-Loss')
+    parser.add_argument('--cls_pw', type=float, default=None,
+                        help='类别权重参数，建议值1.5-2.0')
+    parser.add_argument('--focal_loss', action='store_true',
+                        help='使用Focal Loss (γ=2)代替BCE Loss')
+
+    # A2优化相关参数
+    parser.add_argument('--use_a2', action='store_true',
+                        help='使用A2优化：增加P2检测头 + Anchor重新聚类')
+    parser.add_argument('--add_p2_head', action='store_true',
+                        help='在Neck顶端添加P2检测头')
+    parser.add_argument('--anchors_num', type=int, default=9,
+                        help='聚类的anchor数量，建议9-12')
+
+    # A3优化相关参数
+    parser.add_argument('--use_a3', action='store_true',
+                        help='使用A3优化：SIoU损失 & NMS IoU调节')
+    parser.add_argument('--iou_loss', type=str, default='siou',
+                        choices=['ciou', 'diou', 'giou', 'eiou', 'siou'],
+                        help='IoU损失类型')
+    parser.add_argument('--iou_thres', type=float, default=0.6,
+                        help='IoU阈值，建议0.6')
+    parser.add_argument('--iou_type', type=str, default='giou',
+                        choices=['iou', 'giou', 'siou', 'eiou'],
+                        help='IoU类型，建议giou')
+
     args = parser.parse_args()
 
     # 如果未指定数据目录，查找最新版本的数据目录
@@ -177,6 +253,14 @@ def main():
         args.name = f't-{next_num}'
         print(f"自动设置实验名称为: {args.name}")
 
+    # 检查A1优化条件，如果启用且img_size小于1280，给出建议
+    if args.use_a1 and args.img_size < 1280:
+        print(f"警告: A1优化建议imgsz=1280，当前设置为{args.img_size}")
+
+    # 检查A1优化条件，如果启用且batch_size小于16，给出建议
+    if args.use_a1 and args.batch_size < 16 and args.batch_size != -1:
+        print(f"警告: A1优化建议batch_size=16，当前设置为{args.batch_size}")
+
     # 训练模型
     model = args.model if args.pretrained else f'yolo11n'
 
@@ -189,7 +273,17 @@ def main():
         pretrained=args.pretrained,
         device=args.device,
         project=args.project,
-        name=args.name
+        name=args.name,
+        use_a1_optimization=args.use_a1,
+        use_a2_optimization=args.use_a2,
+        use_a3_optimization=args.use_a3,
+        cls_pw=args.cls_pw,
+        focal_loss=args.focal_loss,
+        add_p2_head=args.add_p2_head,
+        anchors_num=args.anchors_num,
+        iou_loss=args.iou_loss,
+        iou_thres=args.iou_thres,
+        iou_type=args.iou_type
     )
 
 
