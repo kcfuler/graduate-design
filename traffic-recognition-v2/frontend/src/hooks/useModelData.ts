@@ -60,7 +60,7 @@ export const useModelData = () => {
   // 进行推理
   const { 
     loading: isInferring,
-    run: runInference 
+    run: runInferenceInternal
   } = useRequest(
     async (file: File): Promise<InferenceResponse | null> => {
       if (!file || !selectedModel) return null;
@@ -119,7 +119,7 @@ export const useModelData = () => {
     // 操作函数
     handleModelSelect,
     setActiveModel,
-    runInference,
+    runInference: runInferenceInternal as (file: File) => Promise<InferenceResponse | null>,
     refreshModels
   };
 };

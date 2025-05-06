@@ -6,6 +6,7 @@ import RunButton from './RunButton';
 import MetricsDisplay, { PerformanceMetrics } from './MetricsDisplay';
 import ModelSelector from './ModelSelector';
 import useModelData from '../hooks/useModelData';
+import { InferenceResponse } from '../types';
 
 // 移除模拟数据
 // const mockModels: Model[] = [ ... ];
@@ -40,7 +41,7 @@ const InferenceLayout: React.FC = () => {
   const handleRunInference = async () => {
     if (!file) return;
     
-    const result = await runInference(file);
+    const result: InferenceResponse | null = await runInference(file);
     if (!result) return;
     
     setDetections(result.detections);
