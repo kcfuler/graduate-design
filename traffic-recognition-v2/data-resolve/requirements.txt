@@ -1,0 +1,12 @@
+# 基础依赖
+numpy>=1.21.0
+opencv-python>=4.5.0
+tqdm>=4.62.0
+
+# 深度学习相关
+torch>=2.0.0
+ultralytics>=8.0.0  # YOLO 实现
+
+# 工具库
+PyYAML>=6.0  # YAML 文件处理
+pathlib>=1.0.1  # 路径处理 
