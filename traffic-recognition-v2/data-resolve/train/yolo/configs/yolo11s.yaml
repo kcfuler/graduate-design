@@ -1,52 +1,90 @@
-# YOLOv11s 模型配置文件
-# 此配置可通过环境变量或命令行参数动态注入值
-# 使用方法: python train.py --cfg configs/yolo11s.yaml --data configs/data.yaml
+# ===============================
+# YOLO11 训练配置模板 (train_config.yaml)
+# ===============================
 
-# 模型架构
-backbone:
-  - [Conv, 3, 16, 1, 1]  # 0: [type, in_channels, out_channels, kernel_size, stride]
-  - [Conv, 16, 32, 3, 2]  # 1: 下采样
-  - [C3, 32, 32, 2]  # 2: [type, in_channels, out_channels, number of repeats]
-  - [Conv, 32, 64, 3, 2]  # 3: 下采样
-  - [C3, 64, 64, 2]  # 4
-  - [Conv, 64, 128, 3, 2]  # 5: 下采样
-  - [C3, 128, 128, 2]  # 6
-  - [Conv, 128, 256, 3, 2]  # 7: 下采样
-  - [C3, 256, 256, 1]  # 8
-  - [SPPF, 256, 256, 5]  # 9: Spatial Pyramid Pooling - Fast (SPPF) 层
+# —— 数据集与模型路径 ——  
+data: ${data_path}            # 数据集配置文件路径，例如 coco8.yaml  
+model: ${model_path}          # 模型结构 YAML 或预训练权重 .pt 文件  
 
-# 检测头
-head:
-  - [nn.Upsample, null, 2, 'nearest']  # 10: 上采样
-  - [Concat, [10, 6], 1]  # 11: 特征融合
-  - [C3, 384, 128, 1, False]  # 12: 不使用残差连接
-  - [nn.Upsample, null, 2, 'nearest']  # 13: 上采样
-  - [Concat, [13, 4], 1]  # 14: 特征融合
-  - [C3, 192, 64, 1, False]  # 15: 不使用残差连接
-  - [Conv, 64, 64, 3, 2]  # 16: 下采样
-  - [Concat, [16, 12], 1]  # 17: 特征融合
-  - [C3, 192, 128, 1, False]  # 18: 不使用残差连接
-  - [Conv, 128, 128, 3, 2]  # 19: 下采样
-  - [Concat, [19, 9], 1]  # 20: 特征融合
-  - [C3, 384, 256, 1, False]  # 21: 不使用残差连接
-  - [Detect, [15, 18, 21], nc]  # 检测层
+# —— 基础训练设置 ——  
+epochs: ${epochs}             # 总训练轮次 (默认 100)  
+time: ${time}                 # 最长训练时长 (小时)，优先于 epochs  
+patience: ${patience}         # 验证指标无提升时的早停等待轮次 (默认 100)  
+batch: ${batch}               # 批量大小，整数或 -1/0.7 等自动模式 :contentReference[oaicite:0]{index=0}  
+imgsz: ${imgsz}               # 输入图像尺寸，可为单值或列表 :contentReference[oaicite:1]{index=1}  
+save: ${save}                 # 是否保存训练检查点 (默认 True)  
+save_period: ${save_period}   # 检查点保存频率（轮），-1 表示禁用 :contentReference[oaicite:2]{index=2}  
+cache: ${cache}               # 数据缓存模式（False/'ram'/'disk'） :contentReference[oaicite:3]{index=3}  
 
-# 超参数配置 (可通过 ${param} 形式动态注入)
-# 训练参数
-lr0: ${lr0:0.01}  # 初始学习率
-lrf: ${lrf:0.1}  # 最终学习率衰减因子 (最终lr=lr0*lrf)
-momentum: ${momentum:0.937}  # SGD 动量/Adam beta1
-weight_decay: ${weight_decay:0.0005}  # 优化器权重衰减
-warmup_epochs: ${warmup_epochs:3.0}  # 预热轮数
-warmup_momentum: ${warmup_momentum:0.8}  # 预热阶段动量
-warmup_bias_lr: ${warmup_bias_lr:0.1}  # 预热阶段偏置学习率
+device: ${device}             # 训练设备，如 0, gpu 列表, 'cpu', 'mps', -1 :contentReference[oaicite:4]{index=4}  
+workers: ${workers}           # 数据加载线程数 :contentReference[oaicite:5]{index=5}  
+project: ${project}           # 输出父目录名 :contentReference[oaicite:6]{index=6}  
+name: ${name}                 # 本次训练子目录名 :contentReference[oaicite:7]{index=7}  
+exist_ok: ${exist_ok}         # 若目录已存在，是否覆盖 :contentReference[oaicite:8]{index=8}  
+pretrained: ${pretrained}     # 是否使用预训练权重，或指定权重路径 :contentReference[oaicite:9]{index=9}  
+optimizer: ${optimizer}       # 选用优化器（SGD/Adam/AdamW… 或 'auto'） :contentReference[oaicite:10]{index=10}  
+seed: ${seed}                 # 随机种子，保证可复现 :contentReference[oaicite:11]{index=11}  
+deterministic: ${deterministic} # 强制确定性运算，影响性能 :contentReference[oaicite:12]{index=12}  
+single_cls: ${single_cls}     # 单类别模式 :contentReference[oaicite:13]{index=13}  
+classes: ${classes}           # 指定训练的类别 ID 列表 :contentReference[oaicite:14]{index=14}  
+rect: ${rect}                 # 矩形训练，减小填充 :contentReference[oaicite:15]{index=15}  
+multi_scale: ${multi_scale}   # 多尺度训练 :contentReference[oaicite:16]{index=16}  
+cos_lr: ${cos_lr}             # 余弦学习率调度 :contentReference[oaicite:17]{index=17}  
+close_mosaic: ${close_mosaic} # 最后若干轮禁用 Mosaic :contentReference[oaicite:18]{index=18}  
+resume: ${resume}             # 是否从上次检查点恢复训练 :contentReference[oaicite:19]{index=19}  
+amp: ${amp}                   # 自动混合精度训练 :contentReference[oaicite:20]{index=20}  
+fraction: ${fraction}         # 数据集使用比例 :contentReference[oaicite:21]{index=21}  
+profile: ${profile}           # ONNX/TensorRT 速度分析 :contentReference[oaicite:22]{index=22}  
+freeze: ${freeze}             # 冻结前 N 层或指定层索引 :contentReference[oaicite:23]{index=23}  
 
-# 模型输入配置
-imgsz: ${imgsz:640}  # 输入图像尺寸
-batch_size: ${batch_size:32}  # 批次大小
-epochs: ${epochs:50}  # 训练轮数
+# —— 学习率及损失权重 ——  
+lr0: ${lr0}                   # 初始学习率 (SGD=1E-2, Adam=1E-3) :contentReference[oaicite:24]{index=24}  
+lrf: ${lrf}                   # 最终学习率衰减倍率 = lr0 * lrf :contentReference[oaicite:25]{index=25}  
+momentum: ${momentum}         # SGD 动量 / Adam beta1 :contentReference[oaicite:26]{index=26}  
+weight_decay: ${weight_decay} # 权重衰减 (L2 正则) :contentReference[oaicite:27]{index=27}  
+warmup_epochs: ${warmup_epochs}   # LR 预热轮次 :contentReference[oaicite:28]{index=28}  
+warmup_momentum: ${warmup_momentum} # 预热初始动量 :contentReference[oaicite:29]{index=29}  
+warmup_bias_lr: ${warmup_bias_lr}   # 预热 Bias LR :contentReference[oaicite:30]{index=30}  
 
-# 损失函数系数
-box: ${box:0.05}  # 框损失增益
-cls: ${cls:0.5}  # 分类损失增益
-obj: ${obj:1.0}  # 对象(置信度)损失增益 
+box: ${box}                   # 边框回归损失权重 :contentReference[oaicite:31]{index=31}  
+cls: ${cls}                   # 分类损失权重 :contentReference[oaicite:32]{index=32}  
+dfl: ${dfl}                   # 分布焦点损失权重 :contentReference[oaicite:33]{index=33}  
+
+pose: ${pose}                 # 姿态关键点损失权重 :contentReference[oaicite:34]{index=34}  
+kobj: ${kobj}                 # 关键点置信度损失权重 :contentReference[oaicite:35]{index=35}  
+nbs: ${nbs}                   # 归一化标称批量大小 :contentReference[oaicite:36]{index=36}  
+
+# —— 分割任务专用 ——  
+overlap_mask: ${overlap_mask} # 重叠掩码合并策略 :contentReference[oaicite:37]{index=37}  
+mask_ratio: ${mask_ratio}     # 掩码下采样比例 :contentReference[oaicite:38]{index=38}  
+
+dropout: ${dropout}           # 分类任务 Dropout 率 :contentReference[oaicite:39]{index=39}  
+
+val: ${val}                   # 训练中启用验证 :contentReference[oaicite:40]{index=40}  
+plots: ${plots}               # 保存训练/验证可视化图 :contentReference[oaicite:41]{index=41}  
+
+# —— 数据增强与超参数 ——  
+hsv_h: ${hsv_h}               # 色调抖动 (0–1) :contentReference[oaicite:42]{index=42}  
+hsv_s: ${hsv_s}               # 饱和度抖动 (0–1) :contentReference[oaicite:43]{index=43}  
+hsv_v: ${hsv_v}               # 亮度抖动 (0–1) :contentReference[oaicite:44]{index=44}  
+degrees: ${degrees}           # 图像随机旋转角度 (°) :contentReference[oaicite:45]{index=45}  
+translate: ${translate}       # 平移比例 (0–1) :contentReference[oaicite:46]{index=46}  
+scale: ${scale}               # 缩放增益 :contentReference[oaicite:47]{index=47}  
+shear: ${shear}               # 倾斜角度 (°) :contentReference[oaicite:48]{index=48}  
+perspective: ${perspective}   # 透视变换强度 (0–0.001) :contentReference[oaicite:49]{index=49}  
+flipud: ${flipud}             # 垂直翻转概率 :contentReference[oaicite:50]{index=50}  
+fliplr: ${fliplr}             # 水平翻转概率 :contentReference[oaicite:51]{index=51}  
+bgr: ${bgr}                   # RGB⇄BGR 概率 :contentReference[oaicite:52]{index=52}  
+mosaic: ${mosaic}             # Mosaic 增强比例 :contentReference[oaicite:53]{index=53}  
+mixup: ${mixup}               # MixUp 增强比例 :contentReference[oaicite:54]{index=54}  
+cutmix: ${cutmix}             # CutMix 增强比例 :contentReference[oaicite:55]{index=55}  
+copy_paste: ${copy_paste}     # 仅分割任务：对象复制粘贴比例 :contentReference[oaicite:56]{index=56}  
+copy_paste_mode: ${copy_paste_mode} # ’flip‘ 或 ’mixup‘ :contentReference[oaicite:57]{index=57}  
+auto_augment: ${auto_augment} # 分类任务增强策略 :contentReference[oaicite:58]{index=58}  
+erasing: ${erasing}           # 分类任务擦除概率 :contentReference[oaicite:59]{index=59}  
+
+# —— 日志与监控（可选） ——  
+# comet: true / false 或 API key  
+# clearml: true / false  
+# tensorboard: true / false  
+
