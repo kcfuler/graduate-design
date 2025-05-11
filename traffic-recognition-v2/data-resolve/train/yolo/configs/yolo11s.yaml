@@ -1,0 +1,52 @@
+# YOLOv11s 模型配置文件
+# 此配置可通过环境变量或命令行参数动态注入值
+# 使用方法: python train.py --cfg configs/yolo11s.yaml --data configs/data.yaml
+
+# 模型架构
+backbone:
+  - [Conv, 3, 16, 1, 1]  # 0: [type, in_channels, out_channels, kernel_size, stride]
+  - [Conv, 16, 32, 3, 2]  # 1: 下采样
+  - [C3, 32, 32, 2]  # 2: [type, in_channels, out_channels, number of repeats]
+  - [Conv, 32, 64, 3, 2]  # 3: 下采样
+  - [C3, 64, 64, 2]  # 4
+  - [Conv, 64, 128, 3, 2]  # 5: 下采样
+  - [C3, 128, 128, 2]  # 6
+  - [Conv, 128, 256, 3, 2]  # 7: 下采样
+  - [C3, 256, 256, 1]  # 8
+  - [SPPF, 256, 256, 5]  # 9: Spatial Pyramid Pooling - Fast (SPPF) 层
+
+# 检测头
+head:
+  - [nn.Upsample, null, 2, 'nearest']  # 10: 上采样
+  - [Concat, [10, 6], 1]  # 11: 特征融合
+  - [C3, 384, 128, 1, False]  # 12: 不使用残差连接
+  - [nn.Upsample, null, 2, 'nearest']  # 13: 上采样
+  - [Concat, [13, 4], 1]  # 14: 特征融合
+  - [C3, 192, 64, 1, False]  # 15: 不使用残差连接
+  - [Conv, 64, 64, 3, 2]  # 16: 下采样
+  - [Concat, [16, 12], 1]  # 17: 特征融合
+  - [C3, 192, 128, 1, False]  # 18: 不使用残差连接
+  - [Conv, 128, 128, 3, 2]  # 19: 下采样
+  - [Concat, [19, 9], 1]  # 20: 特征融合
+  - [C3, 384, 256, 1, False]  # 21: 不使用残差连接
+  - [Detect, [15, 18, 21], nc]  # 检测层
+
+# 超参数配置 (可通过 ${param} 形式动态注入)
+# 训练参数
+lr0: ${lr0:0.01}  # 初始学习率
+lrf: ${lrf:0.1}  # 最终学习率衰减因子 (最终lr=lr0*lrf)
+momentum: ${momentum:0.937}  # SGD 动量/Adam beta1
+weight_decay: ${weight_decay:0.0005}  # 优化器权重衰减
+warmup_epochs: ${warmup_epochs:3.0}  # 预热轮数
+warmup_momentum: ${warmup_momentum:0.8}  # 预热阶段动量
+warmup_bias_lr: ${warmup_bias_lr:0.1}  # 预热阶段偏置学习率
+
+# 模型输入配置
+imgsz: ${imgsz:640}  # 输入图像尺寸
+batch_size: ${batch_size:32}  # 批次大小
+epochs: ${epochs:50}  # 训练轮数
+
+# 损失函数系数
+box: ${box:0.05}  # 框损失增益
+cls: ${cls:0.5}  # 分类损失增益
+obj: ${obj:1.0}  # 对象(置信度)损失增益 

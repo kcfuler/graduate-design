@@ -1,0 +1,20 @@
+# YOLOv11 数据集配置文件
+# 数据路径配置
+path: ${data_path}  # 数据集根目录（支持相对或绝对路径）
+train: ${train_images:train/images}  # 训练图像相对路径
+val: ${val_images:val/images}  # 验证图像相对路径
+test: ${test_images:test/images}  # 测试图像相对路径
+
+# 类别信息
+nc: ${num_classes}  # 类别数量
+names: ${class_names}  # 类别名称列表
+
+# 数据增强参数
+mosaic: ${mosaic:1.0}  # mosaic 增强概率
+mixup: ${mixup:0.0}  # mixup 增强概率
+copy_paste: ${copy_paste:0.0}  # copy-paste 增强概率
+
+# 高级配置
+cache: ${cache:False}  # 是否缓存图像至RAM
+rect: ${rect:False}  # 是否使用矩形训练
+workers: ${workers:8}  # 数据加载线程数 
