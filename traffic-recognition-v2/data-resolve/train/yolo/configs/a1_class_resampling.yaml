@@ -1,0 +1,36 @@
+# ===============================
+# A1优化策略: 类重采样/Focal-Loss（长尾分布优化）
+# 该策略针对类别不平衡问题，可提升长尾分布下的mAP 5~10%
+# ===============================
+
+# —— 数据集与模型路径 —— 
+data: ${data_path}            # 数据集配置文件路径  
+model: 'yolo11n.pt'           # 模型类型，可选: yolo11n.pt, yolo11s.pt, yolo11m.pt, yolo11l.pt
+
+# —— 基础训练设置 ——  
+epochs: 100                   # 训练轮数
+batch: 16                     # 批次大小
+imgsz: 1280                   # 推荐使用1280尺寸图像以获得更好的结果
+device: '0'                   # 训练设备，例如: 0, 0,1,2,3 
+workers: 8                    # 数据加载线程数
+
+# —— 学习率及损失权重 ——
+cls: 1.5                      # 类别权重参数，推荐范围1.5-2.0
+
+# —— 数据增强与超参数 ——  
+mixup: 0.2                    # 当img_size≥1280且batch_size≥16时自动启用mixup
+copy_paste: 0.1               # 当img_size≥1280且batch_size≥16时自动启用copy_paste
+
+# —— A1专用优化参数 ——
+focal_loss: true              # 是否使用Focal Loss (γ=2固定)
+
+# 注意事项
+# 1. 此配置适用于类别不平衡严重的数据集
+# 2. 当类别数量多且分布长尾时，效果最佳
+# 3. 使用Focal Loss时可能需要适当调整学习率
+# 4. 建议搭配较大的图像尺寸使用
+
+# 预设方案参考（实际使用时请直接修改上方相应参数）
+# - 标准方案: imgsz=1280, batch=16, cls=1.5, focal_loss=true, mixup=0.2, copy_paste=0.1
+# - 轻量方案: imgsz=896, batch=8, cls=1.5, focal_loss=true, mixup=0.1, copy_paste=0.05
+# - 极致方案: imgsz=1536, batch=8, cls=2.0, focal_loss=true, mixup=0.3, copy_paste=0.15 
