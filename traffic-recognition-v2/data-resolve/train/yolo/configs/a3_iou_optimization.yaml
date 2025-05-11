@@ -4,8 +4,8 @@
 # ===============================
 
 # —— 数据集与模型路径 ——  
-data: ${data_path}            # 数据集配置文件路径  
-model: 'yolo11n.pt'           # 模型类型，可选: yolo11n.pt, yolo11s.pt, yolo11m.pt, yolo11l.pt
+data: './tt100k.yaml'           # 数据集配置文件路径  
+model: './yolo11n.pt'           # 模型类型，可选: yolo11n.pt, yolo11s.pt, yolo11m.pt, yolo11l.pt
 
 # —— 基础训练设置 ——  
 epochs: 100                   # 训练轮数
