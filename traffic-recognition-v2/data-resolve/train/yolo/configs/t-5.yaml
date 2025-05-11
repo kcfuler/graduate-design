@@ -6,7 +6,7 @@
 
 # —— 基础 —— #
 model: yolo11n.pt            # 预训练权重
-data: ../outputs/dataset.yaml
+data: ./tt100k.yaml
 task: detect
 
 # —— 训练 —— #
