@@ -1,0 +1,63 @@
+# yolo11n_traffic_sign_opt.yaml
+# --------------------------------
+# 经过小目标检测增强、Anchor 重新聚类、Cosine-LR 与 DIoU-NMS 等优化后的完整训练配置
+# 直接 `yolo train --cfg yolo11n_traffic_sign_opt.yaml` 即可生效
+# --------------------------------
+
+# —— 基础 —— #
+model: yolo11n.pt            # 预训练权重
+data: ../outputs/dataset.yaml
+task: detect
+
+# —— 训练 —— #
+epochs: 150
+batch: 16
+imgsz: 896
+device: 0
+optimizer: SGD               # 同等于 --optimizer sgd
+cos_lr: true                 # 采用 Cosine-Annealing 学习率
+lr0: 0.01                    # 初始学习率
+lrf: 0.10                    # 最终学习率衰减系数
+warmup_epochs: 3.0
+warmup_bias_lr: 0.10
+momentum: 0.937
+weight_decay: 0.0005
+amp: true
+deterministic: true
+patience: 100
+
+# —— 数据增强 —— #
+mosaic: 1.0
+mixup: 0.2
+copy_paste: 0.1
+auto_augment: randaugment
+hsv_h: 0.015
+hsv_s: 0.70
+hsv_v: 0.40
+translate: 0.10
+scale: 0.50
+fliplr: 0.50
+cutmix: 0.0
+erasing: 0.4
+
+# —— 损失权重 —— #
+box: 7.5
+cls: 0.5
+dfl: 1.5
+
+# —— Anchors & Head —— #
+auto_anchors: true           # 训练开始时自动聚类
+anchors: 12                  # K-means 聚类得到 12 组 anchors
+strides: [4, 8, 16, 32]      # 启用 P2 小目标检测头
+# small_head: true           # 若代码库需要显式开关，取消此行注释
+
+# —— 后处理 —— #
+nms: diou                    # 使用 DIoU-NMS
+iou: 0.55
+max_det: 300
+
+# —— 日志与保存 —— #
+plots: true
+save_dir: ../outputs/t-5
+val: true
+name: t-5
