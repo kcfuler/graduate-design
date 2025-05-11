@@ -6,7 +6,7 @@
 
 # —— 基础 —— #
 model: yolo11n.pt            # 预训练权重
-data: ./tt100k.yaml
+data: configs/tt100k.yaml
 task: detect
 
 # —— 训练 —— #
@@ -45,19 +45,13 @@ box: 7.5
 cls: 0.5
 dfl: 1.5
 
-# —— Anchors & Head —— #
-auto_anchors: true           # 训练开始时自动聚类
-anchors: 12                  # K-means 聚类得到 12 组 anchors
-strides: [4, 8, 16, 32]      # 启用 P2 小目标检测头
-# small_head: true           # 若代码库需要显式开关，取消此行注释
-
 # —— 后处理 —— #
-nms: diou                    # 使用 DIoU-NMS
+nms: true                    # 使用 NMS
 iou: 0.55
 max_det: 300
 
 # —— 日志与保存 —— #
 plots: true
-save_dir: ../outputs/t-5
 val: true
 name: t-5
+project: ../outputs/t-5
