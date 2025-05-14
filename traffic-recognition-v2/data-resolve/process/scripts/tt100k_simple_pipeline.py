@@ -17,7 +17,7 @@ from sklearn.cluster import KMeans
 import cv2
 
 # 添加父目录到系统路径以导入模块
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def parse_args():
@@ -39,20 +39,6 @@ def parse_args():
                         help='随机种子')
 
     return parser.parse_args()
-
-
-def run_process(cmd, desc="执行命令"):
-    """运行处理命令并打印状态"""
-    print(f">>> {desc}")
-    print(f"$ {cmd}")
-
-    try:
-        result = subprocess.run(cmd, shell=True, check=True)
-        print(f"✓ 命令成功完成，返回码: {result.returncode}")
-        return True
-    except subprocess.CalledProcessError as e:
-        print(f"✗ 命令执行失败，返回码: {e.returncode}")
-        return False
 
 
 def get_next_train_id(base_dir, model_name):
