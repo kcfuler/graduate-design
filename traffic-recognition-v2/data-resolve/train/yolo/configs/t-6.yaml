@@ -1,12 +1,12 @@
 # —— 基础 —— #
-model: ./yolo11n.pt            # 预训练权重
+model: ../model/y11-p2.yaml
 data: ./tt100k.yaml
 task: detect
 
 # —— 训练 —— #
 epochs: 150
 batch: 16
-imgsz: 1024
+imgsz: 896
 device: 0
 optimizer: SGD               # 同等于 --optimizer sgd
 cos_lr: true                 # 采用 Cosine-Annealing 学习率
