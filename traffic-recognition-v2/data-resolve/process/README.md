@@ -1,6 +1,6 @@
 # TT-100K 交通标志数据集优化处理
 
-本目录包含用于处理和优化TT-100K交通标志数据集的工具和脚本，优化的主要目标是提高检测模型对小目标交通标志的识别能力，解决类别分布不均衡问题。
+本目录包含用于处理和优化TT-100K交通标志数据集的工具和脚本，优化的主要目标是根据类别频次进行数据筛选，转换为YOLO格式以便于训练。
 
 ## 背景
 
@@ -11,24 +11,17 @@ TT-100K数据集包含了204个类别、约7000张标注图像的交通标志，
 
 ## 优化解决方案
 
-我们实现了一套完整的数据处理流水线，主要包括以下步骤：
+我们实现了一套简化的数据处理流水线，主要包括以下步骤：
 
-### 1. 类别频次分层处理
+### 1. 类别频次筛选
 
-将204个类别根据出现频次分为三个档次：
-- **A类** (高频类别): ≥50张样本的类别，保持原样
-- **B类** (中频类别): 10-49张样本的类别，在训练时过采样3-5倍
-- **C类** (低频类别): <10张样本的类别，合并为`unknown_rare`类别统一处理
+根据指定的类别频次阈值筛选数据：
+- **保留类别**: 出现频次≥指定阈值的类别
+- **丢弃类别**: 出现频次<指定阈值的类别
 
-### 2. Anchor重聚类
+### 2. Anchor重聚类（可选）
 
 使用K-means++算法在TT-100K数据集上重新聚类Anchor boxes，生成更适合小目标检测的先验框，提高召回率。
-
-### 3. 数据增强
-
-实现针对交通标志小目标的特定增强策略：
-- **Mosaic增强**：将4张图像拼接成一张，增加每批次训练的目标数量和上下文多样性
-- **Mixup增强**：将两张图像按比例混合，增加训练样本的多样性和难度
 
 ## 文件结构
 
@@ -40,8 +33,7 @@ process/
 ├── scripts/              # 处理脚本
 │   ├── process_tt100k.py          # 基础处理脚本
 │   ├── advanced_tt100k_process.py # 分层处理脚本
-│   ├── augment_tt100k.py          # 数据增强脚本
-│   └── tt100k_enhanced_pipeline.py # 完整处理流水线
+│   └── tt100k_simple_pipeline.py  # 简化处理流水线
 └── README.md             # 本文档
 ```
 
@@ -57,36 +49,26 @@ process/
 
 2. **路径问题**：确保在项目根目录下执行命令，而不是在`process`目录内
 
-### 快速开始：一键处理流水线
+### 快速开始：简化处理流水线
 
-使用`tt100k_enhanced_pipeline.py`脚本执行完整处理流程：
+使用`tt100k_simple_pipeline.py`脚本执行简化处理流程：
 
 ```bash
 # Windows PowerShell
-$env:PYTHONPATH="./process"; python process/scripts/tt100k_enhanced_pipeline.py \
+$env:PYTHONPATH="./process"; python process/scripts/tt100k_simple_pipeline.py \
     --data_dir ./data \
     --output_dir ./processed_data \
     --model yolo \
-    --min_freq_high 50 \
-    --min_freq_mid 10 \
-    --num_clusters 9 \
-    --balance_factor 3 \
-    --mosaic_count 1000 \
-    --mixup_count 500 \
-    --frequency_level all
+    --min_freq 100 \
+    --num_clusters 9
 
 # Linux/Mac
-PYTHONPATH=./process python process/scripts/tt100k_enhanced_pipeline.py \
+PYTHONPATH=./process python process/scripts/tt100k_simple_pipeline.py \
     --data_dir ./data \
     --output_dir ./processed_data \
     --model yolo \
-    --min_freq_high 50 \
-    --min_freq_mid 10 \
-    --num_clusters 9 \
-    --balance_factor 3 \
-    --mosaic_count 1000 \
-    --mixup_count 500 \
-    --frequency_level all
+    --min_freq 100 \
+    --num_clusters 9
 ```
 
 ## 版本管理机制
@@ -110,21 +92,23 @@ PYTHONPATH=./process python process/scripts/tt100k_enhanced_pipeline.py \
 processed_data/
 ├── yolo/                         # 模型类型目录
 │   ├── 1/                        # 第一次训练
-│   │   ├── stratified/           # 分层处理的中间输出
-│   │   │   ├── anchors.txt       # 聚类生成的anchor boxes
-│   │   │   ├── class_frequency.json  # 类别频次统计
-│   │   │   └── yolo_stratified/  # 分层采样后的YOLO格式数据
-│   │   └── final/                # 增强后的最终数据
+│   │   └── final/                # 处理后的数据
 │   │       ├── classes.txt       # 类别名称文件 
 │   │       ├── tt100k.yaml       # YOLO配置文件
 │   │       ├── DATASET_INFO.md   # 数据集信息说明
-│   │       └── ...
+│   │       ├── train/            # 训练集
+│   │       │   ├── images/       # 训练图像
+│   │       │   └── labels/       # 训练标签
+│   │       ├── val/              # 验证集
+│   │       │   ├── images/       # 验证图像
+│   │       │   └── labels/       # 验证标签
+│   │       └── test/             # 测试集
+│   │           ├── images/       # 测试图像
+│   │           └── labels/       # 测试标签
 │   └── 2/                        # 第二次训练(参数调整后)
-│       ├── stratified/
 │       └── final/
 └── mobilenet/                    # 另一种模型的处理结果
     └── 1/
-        ├── stratified/
         └── final/
 ```
 
@@ -135,138 +119,60 @@ processed_data/
 - `--data_dir`：TT100K原始数据集根目录（必须指定）
 - `--output_dir`：处理后数据的基础输出目录（必须指定）
 - `--model`：模型名称，用于目录结构分类（默认：yolo）
-- `--min_freq_high`：高频类别的最小频次阈值（默认：50）
-- `--min_freq_mid`：中频类别的最小频次阈值（默认：10）
-- `--num_clusters`：Anchor box聚类数量（默认：9）
-- `--balance_factor`：中频类别过采样倍数（默认：3）
-- `--mosaic_count`：马赛克增强样本数量（默认：1000）
-- `--mixup_count`：Mixup增强样本数量（默认：500）
-- `--selected_types`：只处理指定的类别（可选，默认处理所有类别）
-- `--frequency_level`：输出数据集包含的频率层级，可选值：'all'、'high'、'mid'、'low'或'high,mid'等组合，用逗号分隔（默认：all）
+- `--min_freq`：类别的最小频次阈值，小于此阈值的类别将被丢弃（默认：100）
+- `--num_clusters`：Anchor box聚类数量（默认：9，可选）
+- `--selected_types`：只处理指定的类别（可选，默认处理所有符合频次阈值的类别）
+- `--seed`：随机种子，用于数据集分割的可重复性（默认：42）
 
 ## 期望效果
 
-经过上述优化，我们可以期待：
+通过简化的数据处理流程，我们可以专注于高频类别的训练，减少数据集中的噪声，提高模型性能。这种方法有助于：
 
-1. 全204类评估时，mAP@0.5可从原始的0.20-0.30提升至0.40-0.50
-2. 对高频类别子集(如≥50张样本的45类)评估时，mAP@0.5可达到0.85-0.90以上
-3. 小目标检测召回率显著提升，Precision-Recall曲线的最大Recall点可从0.3左右提升至0.6以上
+1. 减少类别失衡问题
+2. 减少训练时间和资源消耗
+3. 提高高频类别的识别准确率
 
-## 使用不同频率层级的数据集
+## 示例：不同频次阈值的使用
 
-通过`--frequency_level`参数，您可以灵活控制输出数据集中包含的类别，以便评估不同类别频率对模型性能的影响：
-
-### 频率过滤逻辑说明
-
-最新版本实现了更严格的频率级别过滤机制，确保只保留纯粹包含指定频率级别类别的图像：
-
-- 当指定`--frequency_level high`时，输出数据集只包含**纯高频类别**的图像，即只有高频类别标注、没有任何中频或低频类别标注的图像
-- 当指定`--frequency_level high,mid`时，输出数据集只包含高频和中频类别的图像，不包含任何低频类别标注
-- 其他组合以此类推
-
-这种严格的过滤方式与之前的版本不同（之前只要图像中包含任何一个指定频率级别的类别就会被保留），能够更精确地控制训练数据集的组成，便于进行更纯粹的频率级别对比实验。
-
-### 1. 仅使用高频类别训练
+### 1. 只保留图片数量≥100的高频类别
 
 ```bash
 # Windows PowerShell
-$env:PYTHONPATH="./process"; python process/scripts/tt100k_enhanced_pipeline.py \
+$env:PYTHONPATH="./process"; python process/scripts/tt100k_simple_pipeline.py \
     --data_dir ./data \
     --output_dir ./processed_data \
-    --model yolo \
-    --min_freq_high 50 \
-    --min_freq_mid 10 \
-    --frequency_level high \
-    --mosaic_count 1000 \
-    --mixup_count 500
+    --model yolo_high_100 \
+    --min_freq 100
 ```
 
-注意：上述命令将只处理包含纯高频类别标注的图像，不包含任何中频或低频类别的图像。这将大幅减少训练集图像数量，但确保了类别的纯粹性。
-
-### 2. 使用高频和中频类别训练
+### 2. 保留图片数量≥50的类别
 
 ```bash
 # Windows PowerShell
-$env:PYTHONPATH="./process"; python process/scripts/tt100k_enhanced_pipeline.py \
+$env:PYTHONPATH="./process"; python process/scripts/tt100k_simple_pipeline.py \
     --data_dir ./data \
     --output_dir ./processed_data \
-    --model yolo_high_mid \
-    --min_freq_high 50 \
-    --min_freq_mid 10 \
-    --frequency_level high,mid \
-    --mosaic_count 1000 \
-    --mixup_count 500
+    --model yolo_mid_50 \
+    --min_freq 50
 ```
 
-上述命令将处理同时包含高频和中频类别的图像，或者只包含高频类别的图像，或者只包含中频类别的图像，但不包含任何低频类别标注的图像。
-
-### 3. 仅使用中频类别训练
+### 3. 保留图片数量≥10的类别（包含更多类别）
 
 ```bash
 # Windows PowerShell
-$env:PYTHONPATH="./process"; python process/scripts/tt100k_enhanced_pipeline.py \
+$env:PYTHONPATH="./process"; python process/scripts/tt100k_simple_pipeline.py \
     --data_dir ./data \
     --output_dir ./processed_data \
-    --model yolo_mid \
-    --min_freq_high 50 \
-    --min_freq_mid 10 \
-    --frequency_level mid \
-    --mosaic_count 800 \
-    --mixup_count 400
+    --model yolo_low_10 \
+    --min_freq 10
 ```
-
-该命令将只处理包含纯中频类别标注的图像，不包含任何高频或低频类别的图像。
-
-### 4. 仅使用低频类别训练（所有低频类别合并为'unknown_rare'）
-
-```bash
-# Windows PowerShell
-$env:PYTHONPATH="./process"; python process/scripts/tt100k_enhanced_pipeline.py \
-    --data_dir ./data \
-    --output_dir ./processed_data \
-    --model yolo_low \
-    --min_freq_high 50 \
-    --min_freq_mid 10 \
-    --frequency_level low \
-    --mosaic_count 500 \
-    --mixup_count 200
-```
-
-该命令将只处理包含纯低频类别标注的图像，不包含任何高频或中频类别的图像。所有低频类别都将被合并为'unknown_rare'类别。
-
-### 5. 使用全部频率级别（默认行为）
-
-```bash
-# Windows PowerShell
-$env:PYTHONPATH="./process"; python process/scripts/tt100k_enhanced_pipeline.py \
-    --data_dir ./data \
-    --output_dir ./processed_data \
-    --model yolo_all \
-    --min_freq_high 50 \
-    --min_freq_mid 10 \
-    --frequency_level all \
-    --mosaic_count 1000 \
-    --mixup_count 500
-```
-
-使用`--frequency_level all`将处理所有图像，不进行频率过滤。这是默认行为。
-
-### 模型比较与评估
-
-通过训练不同频率层级的模型，您可以比较：
-
-1. 高频类别模型：类别少但每类样本充足，可能有更高的准确率
-2. 中频类别模型：类别适中，样本相对较少，挑战性更大
-3. 混合模型：包含所有或多种频率层级的类别，更全面但也更具挑战性
-
-这种对比实验有助于理解类别分布对模型性能的影响，并为实际应用中的数据处理策略提供指导。
 
 ## 依赖项
 
 - Python 3.8+
 - numpy
 - opencv-python
-- scikit-learn (用于K-means聚类)
+- scikit-learn (用于K-means聚类，可选)
 - tqdm (进度显示)
 
 可通过以下命令安装必要依赖：
@@ -285,25 +191,16 @@ pip install numpy opencv-python scikit-learn tqdm
    - 问题：脚本找不到annotations_all.json文件
    - 解决方案：确保`--data_dir`参数指向包含annotations_all.json的TT-100K数据集根目录
 
-3. **处理时间过长**
-   - 问题：大数据集处理耗时长
-   - 解决方案：可以通过`--selected_types`参数只处理部分类别，或调低`--mosaic_count`和`--mixup_count`参数
-
-4. **参数错误: unrecognized arguments: --input_size**
-   - 问题：README中曾提到的`--input_size`参数在最新版本脚本中已被移除
-   - 解决方案：请移除此参数，直接使用其他参数运行脚本
-   
-5. **处理失败或中断**
+3. **处理失败或中断**
    - 问题：处理过程中断或失败
    - 解决方案：
-     - 使用`--skip_step`或`--only_step`参数跳过已完成步骤或只执行特定步骤
      - 检查生成的中间文件是否完整
      - 确保磁盘空间充足，TT-100K数据集处理后会占用更多空间 
 
-6. **PowerShell参数解析错误：Missing expression after unary operator '--'**
+4. **PowerShell参数解析错误：Missing expression after unary operator '--'**
    - 问题：在PowerShell中，双连字符(--) 被解释为一元操作符，导致命令执行失败
    - 解决方案：
      - 确保输入完整的命令，而不是只输入参数部分
      - 将整个命令作为一行输入，不要分行输入
-     - 正确格式示例：`$env:PYTHONPATH="./process"; python process/scripts/tt100k_enhanced_pipeline.py --data_dir ./data --output_dir ./processed_data --model yolo_high --min_freq_high 50 --min_freq_mid 10 --frequency_level high --mosaic_count 1000 --mixup_count 500`
+     - 正确格式示例：`$env:PYTHONPATH="./process"; python process/scripts/tt100k_simple_pipeline.py --data_dir ./data --output_dir ./processed_data --model yolo_high --min_freq 100`
      - 或者考虑使用CMD而不是PowerShell来避免这个问题 
