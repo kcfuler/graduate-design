@@ -37,6 +37,8 @@ def parse_args():
                         help='需要处理的交通标志类型，用逗号分隔，默认处理所有符合频次阈值的类型')
     parser.add_argument('--seed', type=int, default=42,
                         help='随机种子')
+    parser.add_argument('--max_images_per_class', type=int, default=300,
+                        help='每个类别最多保留的图片数量')
 
     return parser.parse_args()
 
@@ -60,7 +62,7 @@ def get_next_train_id(base_dir, model_name):
 class TT100KSimpleProcessor:
     """TT100K数据集简化处理器，只根据类别频次筛选数据"""
 
-    def __init__(self, data_dir, output_dir, min_freq=100, selected_types=None, seed=42):
+    def __init__(self, data_dir, output_dir, min_freq=100, selected_types=None, seed=42, max_images_per_class=300):
         """
         初始化处理器
 
@@ -70,12 +72,14 @@ class TT100KSimpleProcessor:
             min_freq (int): 类别的最小频次阈值，小于此阈值的类别将被丢弃
             selected_types (list): 需要处理的交通标志类型，None表示全部处理
             seed (int): 随机种子
+            max_images_per_class (int): 每个类别最多保留的图片数量
         """
         self.data_dir = data_dir
         self.output_dir = output_dir
         self.min_freq = min_freq
         self.selected_types = selected_types
         self.seed = seed
+        self.max_images_per_class = max_images_per_class
         self.annotations = None
         self.class_frequency = None
         self.kept_classes = []  # 保留的类别
@@ -98,25 +102,32 @@ class TT100KSimpleProcessor:
         return self.annotations
 
     def analyze_class_distribution(self):
-        """分析类别分布，按频次筛选"""
+        """分析类别分布，按频次筛选，并限制每个类别的图片数量"""
         if self.annotations is None:
             self.load_annotations()
 
         # 统计每个类别出现的频次
         class_counts = Counter()
-        valid_count = 0
-        total_annotations = 0
+        # 记录包含每个类别的图片ID
+        class_to_images = {cls: [] for cls in self.selected_types or []}
 
         for img_id, img_info in self.annotations['imgs'].items():
             if 'objects' not in img_info:
                 continue
 
+            # 记录该图片中出现的所有类别，用于后续筛选
+            img_categories = set()
             for obj in img_info['objects']:
                 category = obj['category']
                 if self.selected_types is None or category in self.selected_types:
                     class_counts[category] += 1
-                    total_annotations += 1
-                    valid_count += 1
+                    img_categories.add(category)
+
+            # 如果图片包含有效类别，则记录图片ID
+            for category in img_categories:
+                if category not in class_to_images:  # 处理 selected_types is None 的情况
+                    class_to_images[category] = []
+                class_to_images[category].append(img_id)
 
         # 保存类别频次统计
         os.makedirs(self.output_dir, exist_ok=True)
@@ -125,6 +136,7 @@ class TT100KSimpleProcessor:
 
         # 筛选频次大于阈值的类别
         self.class_frequency = class_counts
+        self.kept_classes = []
         for category, count in class_counts.items():
             if count >= self.min_freq:
                 self.kept_classes.append(category)
@@ -134,13 +146,88 @@ class TT100KSimpleProcessor:
         self.class_mapping = {category: idx for idx,
                               category in enumerate(self.kept_classes)}
 
-        # 打印统计信息
-        print(f"数据集共有 {len(class_counts)} 种交通标志类别, 共 {total_annotations} 个标注")
-        print(f"筛选后保留 {len(self.kept_classes)} 种类别（出现频次 ≥ {self.min_freq}）")
+        # 打印筛选前统计信息
+        print(f"数据集共有 {len(class_counts)} 种交通标志类别")
         print(
-            f"丢弃 {len(class_counts) - len(self.kept_classes)} 种类别（出现频次 < {self.min_freq}）")
+            f"筛选标准：频次 ≥ {self.min_freq}，每类最多图片数 ≤ {self.max_images_per_class}")
 
-        return class_counts
+        # --- 新增逻辑：限制每个保留类别的图片数量 ---
+        final_kept_image_ids = set()
+        original_image_count = len(self.annotations['imgs'])
+
+        for category in self.kept_classes:
+            if category in class_to_images:
+                images_for_category = class_to_images[category]
+                # 去重，因为一张图片可能在上面被多次添加到同一个category列表
+                unique_images_for_category = list(set(images_for_category))
+
+                if len(unique_images_for_category) > self.max_images_per_class:
+                    # 随机选择 N 张图片
+                    selected_images = random.sample(
+                        unique_images_for_category, self.max_images_per_class)
+                    print(
+                        f"类别 '{category}' 图片数 {len(unique_images_for_category)} > {self.max_images_per_class}，随机选取 {self.max_images_per_class} 张。")
+                else:
+                    selected_images = unique_images_for_category
+
+                final_kept_image_ids.update(selected_images)
+
+        # 根据 final_kept_image_ids 构建新的 annotations['imgs']
+        new_imgs_annotation = {}
+        for img_id in final_kept_image_ids:
+            if img_id in self.annotations['imgs']:
+                # 同时，需要确保图片中的标注对象至少有一个属于 kept_classes
+                original_objects = self.annotations['imgs'][img_id].get(
+                    'objects', [])
+                filtered_objects = [
+                    obj for obj in original_objects if obj['category'] in self.kept_classes]
+
+                if filtered_objects:  # 只有当图片中还存在属于保留类别的标注时，才保留这张图片
+                    new_img_info = self.annotations['imgs'][img_id].copy()
+                    new_img_info['objects'] = filtered_objects
+                    new_imgs_annotation[img_id] = new_img_info
+
+        self.annotations['imgs'] = new_imgs_annotation
+
+        # 更新 class_counts 和 kept_classes 基于筛选后的图片
+        # 重新统计类别频次，因为某些图片可能因为其他类别的限制而被移除，导致某些最初满足 min_freq 的类别现在可能不再满足
+        final_class_counts = Counter()
+        for img_id, img_info in self.annotations['imgs'].items():
+            if 'objects' not in img_info:
+                continue
+            for obj in img_info['objects']:
+                category = obj['category']
+                # 确保只统计在 self.kept_classes 中（即初步通过频次筛选）且在 selected_types（如果指定）中的类别
+                if category in self.kept_classes and (self.selected_types is None or category in self.selected_types):
+                    final_class_counts[category] += 1
+
+        final_kept_classes = []
+        for category, count in final_class_counts.items():
+            if count >= self.min_freq:  # 再次检查频次，确保在图片数量限制后仍然满足
+                final_kept_classes.append(category)
+
+        self.kept_classes = sorted(final_kept_classes)
+        self.class_mapping = {category: idx for idx,
+                              category in enumerate(self.kept_classes)}
+        self.class_frequency = final_class_counts
+
+        # 打印统计信息
+        print(
+            f"经过图片数量限制和类别重新校验后，最终保留 {len(self.annotations['imgs'])} 张图片 (原为 {original_image_count} 张)")
+        print(f"最终保留 {len(self.kept_classes)} 种类别。")
+        if len(class_counts) - len(self.kept_classes) > 0:
+            print(
+                f"共丢弃 {len(class_counts) - len(self.kept_classes)} 种不符合最终标准的类别。")
+
+        # 调试：打印最终保留的每个类别的对象数量
+        # final_obj_counts_debug = Counter()
+        # for img_id, img_info in self.annotations['imgs'].items():
+        #     for obj in img_info.get('objects', []):
+        #         if obj['category'] in self.kept_classes:
+        #             final_obj_counts_debug[obj['category']] +=1
+        # print(f"最终保留的对象数量（按类别）：{final_obj_counts_debug}")
+
+        return self.class_frequency  # 返回最终的频次统计
 
     def cluster_anchors(self, num_clusters=9):
         """使用K-means++对边界框进行聚类，生成更合适的anchor boxes"""
@@ -447,55 +534,67 @@ def main():
     """主处理流水线"""
     args = parse_args()
 
-    # 处理选择的类型
-    selected_types = None
+    # 设置随机种子
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+
+    # 处理selected_types参数
+    selected_types_list = None
     if args.selected_types:
-        selected_types = args.selected_types.split(',')
-        print(f"将只处理以下类型的交通标志: {selected_types}")
+        selected_types_list = [s.strip()
+                               for s in args.selected_types.split(',')]
 
-    # 创建基础输出目录
-    os.makedirs(args.output_dir, exist_ok=True)
-
-    # 获取下一个训练次数
+    # 获取版本化的输出目录
     train_id = get_next_train_id(args.output_dir, args.model)
+    versioned_output_dir = os.path.join(
+        args.output_dir, args.model, str(train_id))
+    os.makedirs(versioned_output_dir, exist_ok=True)
 
-    # 构建版本化输出路径：processed_data/模型/训练次数
-    model_dir = os.path.join(args.output_dir, args.model)
-    os.makedirs(model_dir, exist_ok=True)
+    print(f"TT100K数据集处理开始...")
+    print(f"原始数据目录: {args.data_dir}")
+    print(f"输出目录: {versioned_output_dir}")
+    print(f"模型类型: {args.model}")
+    print(f"类别最小频次: {args.min_freq}")
+    print(f"每个类别最大图片数: {args.max_images_per_class}")  # 打印新参数
+    if selected_types_list:
+        print(f"指定处理类别: {selected_types_list}")
+    print(
+        f"Anchor聚类数量: {args.num_clusters if args.num_clusters > 0 else '不进行聚类'}")
+    print(f"随机种子: {args.seed}")
 
-    train_dir = os.path.join(model_dir, str(train_id))
-    os.makedirs(train_dir, exist_ok=True)
-
-    print(f"创建训练数据目录: {train_dir} (第{train_id}次训练)")
-
-    # 创建处理器实例
+    # 初始化处理器
     processor = TT100KSimpleProcessor(
-        args.data_dir,
-        train_dir,
-        args.min_freq,
-        selected_types,
-        args.seed
+        data_dir=args.data_dir,
+        output_dir=versioned_output_dir,  # 使用版本化目录
+        min_freq=args.min_freq,
+        selected_types=selected_types_list,
+        seed=args.seed,
+        max_images_per_class=args.max_images_per_class  # 传递新参数
     )
 
-    # 分析类别分布
-    processor.analyze_class_distribution()
+    # 执行处理
+    try:
+        # 分析类别分布
+        processor.analyze_class_distribution()
 
-    # 聚类生成anchor boxes（可选）
-    if args.num_clusters > 0:
-        processor.cluster_anchors(args.num_clusters)
+        # 聚类生成anchor boxes（可选）
+        if args.num_clusters > 0:
+            processor.cluster_anchors(args.num_clusters)
 
-    # 处理数据集
-    final_output_dir = processor.process_dataset()
+        # 处理数据集
+        final_output_dir = processor.process_dataset()
 
-    # 创建最终数据集说明
-    create_dataset_readme(args, final_output_dir, train_id)
+        # 创建最终数据集说明
+        create_dataset_readme(args, final_output_dir, train_id)
 
-    # 汇总处理结果
-    print("\n" + "="*80)
-    print("TT100K数据处理流水线已完成")
-    print(f"最终数据集位置: {final_output_dir}")
-    print(f"训练次数: 第{train_id}次")
-    print("="*80 + "\n")
+        # 汇总处理结果
+        print("\n" + "="*80)
+        print("TT100K数据处理流水线已完成")
+        print(f"最终数据集位置: {final_output_dir}")
+        print(f"训练次数: 第{train_id}次")
+        print("="*80 + "\n")
+    except Exception as e:
+        print(f"处理过程中发生错误: {e}")
 
 
 if __name__ == '__main__':
